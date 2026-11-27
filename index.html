@@ -8,6 +8,7 @@
   <title>青瓦郡 · 爱慕杰修仙志</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="atlas.css">
+  <link rel="stylesheet" href="character.css">
   <script src="encounters.js" defer></script>
   <script src="water-case.js" defer></script>
   <script src="world.js" defer></script>
@@ -39,7 +40,10 @@
           <div class="atlas-map" id="atlas-map" role="group" aria-label="点选地名可查看行程或前往">
             <img class="map-art" src="art/locations/qingwa-atlas.webp" alt="青瓦河从群山间流过，西岸有村田和市镇，东岸有学宫和废弃的水闸。" width="1536" height="1024">
           </div>
-          <figcaption><span id="map-position">灭霸在灭家村</span><span>点地名探路 · 赶路耗一日</span></figcaption>
+          <figcaption>
+            <span class="map-traveler"><span class="hero-avatar" data-hero-art aria-hidden="true"></span><span id="map-position">灭霸在灭家村</span></span>
+            <span>点地名探路 · 赶路耗一日</span>
+          </figcaption>
         </figure>
         <article id="water-notice" class="water-notice" aria-labelledby="water-title" hidden>
           <img id="hearing-art" alt="田边的听证桌上摆着锯了缺口的量斗、算盘和拆下的表齿。" width="600" height="360">
@@ -63,6 +67,10 @@
         <details id="water-voices" hidden>
           <summary>听听水案各方怎么说</summary>
           <dl id="voice-lines"></dl>
+          <div class="hero-reply">
+            <span class="hero-avatar" id="hearing-face" data-hero-art aria-hidden="true"></span>
+            <p><strong>灭霸</strong><span id="hearing-reply"></span></p>
+          </div>
         </details>
         <div class="latest" id="latest" tabindex="-1"></div>
         <div id="local-actions" class="local-actions"></div>
@@ -83,12 +91,7 @@
           <span class="arena-label" id="round-number">第 1 回合</span>
           <span class="arena-label location" id="battle-place"></span>
           <figure class="player-fighter">
-            <div class="paper-disciple" aria-hidden="true">
-              <span class="disciple-boots"></span>
-              <span class="disciple-robe"></span>
-              <span class="disciple-head"></span>
-              <span class="disciple-glove"></span>
-            </div>
+            <div class="hero-stage" data-hero-art aria-hidden="true"><span class="snap-mark">啪</span></div>
             <figcaption>灭霸</figcaption>
           </figure>
           <img class="furnace" id="furnace-art" loading="lazy" src="art/concepts/attendance-furnace.png" width="1254" height="1254" alt="青铜丹炉的侧面用红绳绑着一台考勤机">
@@ -129,6 +132,7 @@
             </div>
           </div>
         </section>
+        <p id="battle-reply" class="battle-reply"></p>
 
         <div class="commands" id="commands"></div>
       </section>
@@ -152,6 +156,26 @@
       <button type="button" id="reset-confirm">确认清除</button>
     </div>
   </dialog>
+  <template id="hero-art">
+    <span class="hero-drawing">
+      <span class="hero-shadow"></span>
+      <span class="hero-legs"></span>
+      <span class="hero-sleeve"></span>
+      <span class="hero-coat">
+        <span class="hero-collar"></span>
+        <span class="hero-pocket"><span></span></span>
+      </span>
+      <span class="hero-head">
+        <span class="hero-ear"></span>
+        <span class="hero-brow"></span>
+        <span class="hero-eyes"></span>
+        <span class="hero-nose"></span>
+        <span class="hero-mouth"></span>
+        <span class="hero-chin"></span>
+      </span>
+      <span class="hero-arm"><span></span></span>
+    </span>
+  </template>
   <p class="screen-reader" id="update" role="status" aria-atomic="true"></p>
 </body>
 </html>

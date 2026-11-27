@@ -70,10 +70,6 @@ button:hover:not(:disabled) { text-decoration-color: currentColor; }
 .arena-art[data-foe="sluice"] { background-image: url("art/locations/sluice.webp"); background-position: center 59%; }
 .arena-art[data-foe="thor"] { background-image: url("art/locations/thor-inspection.webp"); background-position: center 53%; }
 .arena-art[data-foe="sluice"]:is([data-effect="penalty"],[data-effect="interrupt"]) .furnace-effect { width: 1.35rem; height: 1.35rem; border: 4px double #b78a48; border-radius: 50%; background: #4f432d; }
-.paper-disciple { --robe: #38373b; --gauntlet: #827088; }
-.disciple-robe::before { background: #ebe9df; transform: rotate(14deg); }
-.disciple-robe::after { background: #202324; }
-.disciple-head { border-radius: 48% 48% 37% 41%; }
 dialog { border: 1px solid var(--control-line); border-top: 4px solid var(--bronze); padding: 0 1.35rem 1.35rem;
   background: var(--panel); color: var(--ink); width: min(36rem,calc(100% - 2rem)); max-height: 82dvh; overflow: auto; }
 dialog::backdrop { background: rgb(23 31 25 / .6); }

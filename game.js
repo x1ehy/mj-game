@@ -74,6 +74,17 @@
     if (className) node.className = className;
     return node;
   }
+  const heroTemplate = $("hero-art");
+  for (const mount of document.querySelectorAll("[data-hero-art]")) {
+    mount.append(heroTemplate.content.cloneNode(true));
+  }
+  function thanosHearingReply() {
+    if (state.inventory.diagnosis) return ["smug", "这回验单上有签名。谁要再收钱，先把制造人和赔款人请来。"];
+    if (state.inventory.notches) return ["smug", "我把水量刻在斗上了。斗没学过算账，应该比水表靠谱。"];
+    if (state.inventory.measure) return ["steady", "我去闸口放水。谁都别动桌上那把算盘，回来我要对数。"];
+    if (state.debt) return ["hurt", "一株草还没还，人情已经长利息了。"];
+    return ["steady", "账单给我看。河流了三十年，头回听说它也得交学费。"];
+  }
   function announce(text) { $("update").textContent = text; }
   function actionButton(option, primary = false) {
     const btn = el("button", undefined, primary ? "command command-primary" : "command");
@@ -95,6 +106,11 @@
     $("water-voices").hidden = !voices.length;
     if (!voices.length) $("water-voices").open = false;
     $("voice-lines").replaceChildren(...voices.flatMap(([id, line]) => [el("dt", World.people[id].name), el("dd", line)]));
+    if (voices.length) {
+      const [mood, line] = thanosHearingReply();
+      $("hearing-face").dataset.mood = mood;
+      $("hearing-reply").textContent = line;
+    }
   }
   function renderAtlas() {
     const here = selected === state.place;
@@ -145,6 +161,13 @@
     const won = b.outcome === "victory", lost = b.outcome === "defeat";
     $("case-title").textContent = foe.caseTitle; $("case-premise").textContent = foe.intro;
     $("arena-art").dataset.foe = b.id; $("arena-art").dataset.effect = b.effect;
+    const mood = won || b.effect === "interrupt" ? "smug" : lost || b.effect === "penalty" ? "hurt" : "steady";
+    $("arena-art").dataset.mood = mood;
+    const remark = won ? "这回谁签字？我手腾不开。" : lost ? "先歇一会儿。别写我旷课。" :
+      b.counterReady ? "打我盖上了。现在轮到我还盖。" :
+      b.effect === "interrupt" ? "这一步先免了。你接着念。" :
+      b.health <= 2 ? "等会儿，我领子都被你打歪了。" : "";
+    $("battle-reply").textContent = remark ? `灭霸：「${remark}」` : "";
     $("battle-place").textContent = foe.place; $("enemy-name").textContent = foe.title;
     $("enemy-meter-label").textContent = b.id === "thor" ? "架势" : "外壳";
     $("furnace-art").hidden = b.id !== "furnace"; $("round-number").textContent = `第 ${b.round} 回合`;
@@ -201,6 +224,8 @@
   });
   function battleAction(id) {
     if (checkForNewerSave() || !World.fight(state, id)) return;
+    const arena = $("arena-art");
+    arena.dataset.gesture = id;
     save(); render();
     if (state.battle) {
       announce(`${state.battle.turns[0].text} ${$("announcement-title").textContent}。`);
@@ -211,6 +236,9 @@
   }
   $("commands").addEventListener("click", e => { const btn = e.target.closest("button"); if (btn) battleAction(btn.dataset.action); });
   $("leave-battle").addEventListener("click", () => battleAction("leave"));
+  $("arena-art").addEventListener("animationend", e => {
+    if (e.animationName === "snap-print") delete $("arena-art").dataset.gesture;
+  });
 
   function entry(title, note) {
     const li = el("li"); li.append(el("strong", title), el("small", note)); return li;
@@ -223,9 +251,15 @@
     body.replaceChildren();
     $("ledger-title").textContent = panel === "bag" ? "人物行囊" : "郡中纪事";
     if (panel === "bag") {
-      body.append(el("p", `灭霸　·　${World.realm(state)}　·　${state.stones} 灵石`, "ledger-stats"),
-        el("p", state.trained ? "炼气中期，战斗体力 7、灵力 3，普通攻击威力 2。" : `修为 ${state.xp}。集齐 4 点修为和 1 株引气草，可突破至炼气中期。`, "ledger-note"),
-        el("h3", "随身物件"));
+      const dossier = el("div", undefined, "hero-dossier");
+      const portrait = el("span", undefined, "hero-avatar");
+      portrait.setAttribute("aria-hidden", "true");
+      portrait.append(heroTemplate.content.cloneNode(true));
+      const summary = el("div");
+      summary.append(el("p", `灭霸　·　${World.realm(state)}　·　${state.stones} 灵石`, "ledger-stats"),
+        el("p", state.trained ? "战斗体力 7、灵力 3，普通攻击威力 2。" : `修为 ${state.xp}。集齐 4 点修为和 1 株引气草，可突破至炼气中期。`, "ledger-note"));
+      dossier.append(portrait, summary);
+      body.append(dossier, el("h3", "随身物件"));
       const list = el("ul", undefined, "ledger-list");
       for (const [id, [name, desc]] of Object.entries(World.items)) {
         const n = state.inventory[id]; if (!n) continue;
