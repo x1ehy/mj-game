@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="在青瓦郡四处游历，和灭霸一起查田契、修灵脉、斗法器。">
+  <meta name="theme-color" content="#253e33">
+  <title>青瓦郡 · 爱慕杰修仙志</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="atlas.css">
+  <script src="encounters.js" defer></script>
+  <script src="water-case.js" defer></script>
+  <script src="world.js" defer></script>
+  <script src="game.js" defer></script>
+</head>
+<body>
+  <header class="binding">
+    <div class="binding-inner">
+      <div class="wordmark"><span class="book-seal" aria-hidden="true">郡</span>爱慕杰修仙志</div>
+      <nav aria-label="行旅手册">
+        <button type="button" id="nav-bag">人物行囊</button>
+        <button type="button" id="nav-journal">郡中纪事</button>
+        <button type="button" id="nav-clear" aria-haspopup="dialog" aria-keyshortcuts="Shift+Delete" title="清除当前存档（Shift + Delete）">清除存档</button>
+      </nav>
+    </div>
+  </header>
+  <noscript><p class="noscript">请启用 JavaScript 以开启游历。</p></noscript>
+  <main class="atlas-shell" id="atlas-view">
+    <header class="atlas-header">
+      <div>
+        <h1>青瓦郡山河图</h1>
+        <p id="world-premise">天门闭了三十年。仙盟重划灵脉，灭家的田要在第五日交割。</p>
+      </div>
+      <div class="almanac"><span>郡历</span><strong id="day">第 1 日</strong></div>
+    </header>
+    <div class="field-layout">
+      <div class="map-column">
+        <figure class="atlas-figure">
+          <div class="atlas-map" id="atlas-map" role="group" aria-label="点选地名可查看行程或前往">
+            <img class="map-art" src="art/locations/qingwa-atlas.webp" alt="青瓦河从群山间流过，西岸有村田和市镇，东岸有学宫和废弃的水闸。" width="1536" height="1024">
+          </div>
+          <figcaption><span id="map-position">灭霸在灭家村</span><span>点地名探路 · 赶路耗一日</span></figcaption>
+        </figure>
+        <article id="water-notice" class="water-notice" aria-labelledby="water-title" hidden>
+          <img id="hearing-art" alt="田边的听证桌上摆着锯了缺口的量斗、算盘和拆下的表齿。" width="600" height="360">
+          <div>
+            <div class="letter-title"><span class="field-label" id="water-status"></span><span id="water-date"></span></div>
+            <h2 id="water-title"></h2>
+            <p id="water-copy"></p>
+          </div>
+        </article>
+        <section class="deed-sheet" aria-labelledby="deed-title">
+          <div class="letter-title"><span class="field-label">郡中告示</span><span id="deed-state"></span></div>
+          <h2 id="deed-title">第五天，谁家的田？</h2>
+          <p id="deed-copy"></p>
+        </section>
+      </div>
+      <section class="local-sheet" id="local-sheet" aria-labelledby="place-name">
+        <div class="local-head"><span class="field-label" id="place-context"></span><span id="place-tag"></span></div>
+        <h2 id="place-name" tabindex="-1">灭家村</h2>
+        <p id="place-lore"></p>
+        <p class="visitors" id="visitors"></p>
+        <details id="water-voices" hidden>
+          <summary>听听水案各方怎么说</summary>
+          <dl id="voice-lines"></dl>
+        </details>
+        <div class="latest" id="latest" tabindex="-1"></div>
+        <div id="local-actions" class="local-actions"></div>
+      </section>
+    </div>
+    <footer class="atlas-footer"><span id="identity"></span><span id="save-status"></span></footer>
+  </main>
+  <main class="game" id="battle-view" hidden>
+    <header class="case-header">
+      <p class="masthead"><button type="button" id="leave-battle">← 回山河图</button><span>指令回合战</span></p>
+      <h1 id="case-title" tabindex="-1"></h1>
+      <p class="premise" id="case-premise"></p>
+    </header>
+
+    <div class="battle">
+      <section class="arena" aria-label="战况">
+        <div class="arena-art" id="arena-art">
+          <span class="arena-label" id="round-number">第 1 回合</span>
+          <span class="arena-label location" id="battle-place"></span>
+          <figure class="player-fighter">
+            <div class="paper-disciple" aria-hidden="true">
+              <span class="disciple-boots"></span>
+              <span class="disciple-robe"></span>
+              <span class="disciple-head"></span>
+              <span class="disciple-glove"></span>
+            </div>
+            <figcaption>灭霸</figcaption>
+          </figure>
+          <img class="furnace" id="furnace-art" loading="lazy" src="art/concepts/attendance-furnace.png" width="1254" height="1254" alt="青铜丹炉的侧面用红绳绑着一台考勤机">
+          <span class="furnace-effect" aria-hidden="true"></span>
+        </div>
+        <div class="enemy">
+          <div class="enemy-name">
+            <h2 id="enemy-name"></h2>
+            <p><span id="enemy-meter-label">外壳</span> <strong id="armor-value">6</strong> / <span id="armor-max">6</span></p>
+          </div>
+          <div id="armor-meter" class="meter armor-meter" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <section class="dispatch" aria-label="选择战斗指令">
+        <div class="announcement" id="announcement" data-tone="warning">
+          <p class="announcement-label" id="announcement-label">丹炉预告</p>
+          <h2 id="announcement-title">喷扣分符</h2>
+          <p id="announcement-description">命中会扣 3 点体力，可以用响指打断。</p>
+        </div>
+
+        <section class="player" aria-labelledby="player-name">
+          <h2 id="player-name">灭霸</h2>
+          <div class="player-stats">
+            <div>
+              <dl>
+                <dt>体力</dt>
+                <dd><strong id="health-value">5</strong> / <span id="health-max">5</span></dd>
+              </dl>
+              <div class="meter health-meter" id="health-meter" aria-hidden="true"></div>
+            </div>
+            <div>
+              <dl>
+                <dt>灵力</dt>
+                <dd><strong id="spirit-value">2</strong> / <span id="spirit-max">2</span></dd>
+              </dl>
+              <div class="meter spirit-meter" id="spirit-meter" aria-hidden="true"></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="commands" id="commands"></div>
+      </section>
+    </div>
+
+    <section class="history" aria-labelledby="history-heading">
+      <h2 id="history-heading">战斗记录</h2>
+      <ol class="history-list" id="history-list" reversed></ol>
+    </section>
+  </main>
+  <dialog id="ledger" aria-labelledby="ledger-title">
+    <header class="ledger-head"><h2 id="ledger-title"></h2><button id="close-ledger" type="button">合上</button></header>
+    <div id="ledger-content"></div>
+  </dialog>
+  <dialog id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-warning">
+    <h2 id="reset-title">清除当前存档？</h2>
+    <p id="reset-warning"></p>
+    <p id="reset-error" role="alert" hidden></p>
+    <div class="reset-actions">
+      <button type="button" id="reset-cancel" autofocus>保留存档</button>
+      <button type="button" id="reset-confirm">确认清除</button>
+    </div>
+  </dialog>
+  <p class="screen-reader" id="update" role="status" aria-atomic="true"></p>
+</body>
+</html>

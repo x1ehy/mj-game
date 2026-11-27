@@ -1,0 +1,124 @@
+.binding {
+  background: #233e34;
+  color: #faf4df;
+  border-bottom: 3px solid #9d7651;
+}
+.binding-inner, .atlas-shell { width: min(calc(100% - 3rem), 76rem); margin-inline: auto; }
+.binding-inner { display: flex; justify-content: space-between; align-items: center; min-height: 3.65rem; gap: 1rem; }
+.wordmark { display: flex; align-items: center; gap: .7rem; font: 700 1.25rem var(--font-title); letter-spacing: .08em; }
+.book-seal { display: grid; place-items: center; width: 1.7rem; height: 1.7rem; background: #a64935; border: 1px solid #d79872; font-size: 1rem; letter-spacing: 0; line-height: 1; }
+.binding nav { display: flex; gap: 1rem; }
+.binding button, .ledger-head button, .masthead button, .text-button {
+  border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; min-height: 2.75rem;
+}
+.binding button { color: #ece8d5; padding-inline: .3rem; font-size: .92rem; }
+button:focus-visible { outline: 3px solid #9c4d31; outline-offset: 3px; }
+.binding button:focus-visible { outline-color: #f0ca8d; }
+button:hover:not(:disabled) { text-decoration-color: currentColor; }
+.binding button:hover, .text-button:hover, .masthead button:hover { text-decoration: underline; }
+.atlas-header { padding: clamp(1.25rem,3vw,2.45rem) 0 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: .8rem; }
+.atlas-header h1 { color: #263b30; font-size: clamp(2.05rem,4vw,3.35rem); letter-spacing: .015em; }
+.atlas-header p { margin-top: .55rem; color: var(--muted); font-size: .96rem; }
+.almanac { flex: none; min-width: max-content; padding: .25rem 0 .3rem 1.3rem; border-left: 1px solid var(--control-line); }
+.almanac span,.field-label { color: var(--bronze); font-weight: 700; font-size: .82rem; letter-spacing: .06em; }
+.almanac strong { display: block; font: bold 1.6rem var(--font-title); margin-top: .3rem; white-space: nowrap; }
+.field-layout { display: grid; grid-template-columns: minmax(0,1.92fr) minmax(19rem,1fr); gap: clamp(1rem,2vw,1.7rem); align-items: start; }
+.map-column { min-width: 0; }
+.atlas-figure { margin: 0; background: #314337; border: 1px solid #53604e; }
+.atlas-map { position: relative; isolation: isolate; }
+.map-art { width: 100%; height: auto; display: block; aspect-ratio: 3/2; }
+.atlas-figure figcaption { display: flex; justify-content: space-between; align-items: center; gap: .4rem; padding: .6rem .9rem; color: #f8f1dc; font-size: .82rem; }
+#map-position { font-weight: 700; }
+.pin { transform: translate(-50%,-50%); position: absolute; display: grid; place-items: center; min-height: 44px;
+  padding: 4px; border: none; background: transparent; cursor: pointer; font: bold clamp(.88rem,1.35vw,1.12rem) var(--font-title); }
+.pin span { background: #f7edcf; color: #26342b; padding: .29rem .8rem; border: 1px solid #4f523d; }
+.pin span::before { content: "◇"; margin-right: .32em; }
+.pin[data-current="true"] span { color: #fff5da; background: #873c2e; border-color: #f8e8bc; }
+.pin[data-current="true"] span::before { content: "◆"; }
+.pin[aria-pressed="true"] span { outline: 2px solid #f7eac7; outline-offset: 1px; }
+.pin:hover span { outline: 2px solid #654936; }
+.deed-sheet { border-block: 1px solid var(--control-line); padding: .85rem 0 .95rem; margin-top: 1.05rem; }
+.letter-title,.local-head,.ledger-head,.atlas-footer { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.letter-title .field-label, #deed-state { color: var(--seal); }
+#deed-state, #place-tag { font-size: .81rem; }
+.deed-sheet h2,.local-sheet h2,.ledger-head h2 { font-family: var(--font-title); }
+.deed-sheet h2 { font-size: 1.45rem; margin: .27rem 0; }
+.deed-sheet p, #place-lore { color: #514e43; font-size: .94rem; line-height: 1.65; }
+.water-notice { margin-top: 1rem; display: grid; grid-template-columns: minmax(7rem, 35%) 1fr; align-items: center; gap: 1rem; background: var(--panel); border-block: 1px solid var(--line); }
+.water-notice img { width: 100%; height: 9.8rem; object-fit: cover; }
+.water-notice > div { padding: .65rem .85rem .65rem 0; }
+.water-notice .letter-title { flex-wrap: wrap; row-gap: .1rem; font-size: .82rem; color: var(--muted); }
+.water-notice h2 { margin: .3rem 0; font: bold 1.36rem var(--font-title); }
+.water-notice p, #voice-lines { font-size: .92rem; line-height: 1.6; }
+#water-voices { margin-top: .55rem; border-block: 1px solid var(--line); }
+#water-voices summary { padding: .6rem 0; color: var(--bronze); font-weight: 700; cursor: pointer; }
+#voice-lines { margin: 0 0 .7rem; }
+#voice-lines dt { color: var(--seal); font-weight: 700; }
+#voice-lines dd { margin: 0 0 .4rem; }
+.local-sheet { padding: 1.05rem clamp(1rem,2vw,1.55rem) 1.25rem; background: var(--panel); border-top: 3px solid #365a48; scroll-margin-top: .6rem; }
+.local-head { color: var(--muted); }
+.local-sheet h2 { font-size: 2.05rem; line-height: 1.23; margin: .55rem 0 .38rem; }
+.visitors { font-size: .86rem; margin-top: .7rem; color: var(--bronze); font-weight: 700; }
+.latest { border-left: 2px solid #ac7352; padding: .32rem .65rem; margin-top: .9rem; font-size: .91rem; color: #4f4738; background: #f1eadb; line-height: 1.6; }
+.latest:empty { display: none; }
+.local-actions { margin-top: 1rem; display: grid; gap: .5rem; }
+.local-actions .command { border-color: #c5bba6; }
+.local-actions .command-primary { border-color: #2c4638; background: #2c4638; }
+.atlas-footer { display: flex; flex-wrap: wrap; padding: 1rem 0 2rem; font-size: .83rem; color: var(--muted); }
+.game { padding-top: 1.2rem; }
+.masthead button { padding: 0; color: var(--bronze); }
+.arena-art[data-foe="sluice"] { background-image: url("art/locations/sluice.webp"); background-position: center 59%; }
+.arena-art[data-foe="thor"] { background-image: url("art/locations/thor-inspection.webp"); background-position: center 53%; }
+.arena-art[data-foe="sluice"]:is([data-effect="penalty"],[data-effect="interrupt"]) .furnace-effect { width: 1.35rem; height: 1.35rem; border: 4px double #b78a48; border-radius: 50%; background: #4f432d; }
+.paper-disciple { --robe: #38373b; --gauntlet: #827088; }
+.disciple-robe::before { background: #ebe9df; transform: rotate(14deg); }
+.disciple-robe::after { background: #202324; }
+.disciple-head { border-radius: 48% 48% 37% 41%; }
+dialog { border: 1px solid var(--control-line); border-top: 4px solid var(--bronze); padding: 0 1.35rem 1.35rem;
+  background: var(--panel); color: var(--ink); width: min(36rem,calc(100% - 2rem)); max-height: 82dvh; overflow: auto; }
+dialog::backdrop { background: rgb(23 31 25 / .6); }
+.ledger-head { background: var(--panel); padding: .65rem 0; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 1; }
+.ledger-head h2 { font-size: 1.55rem; }
+.ledger-head button,.text-button { color: var(--bronze); font-weight: 700; }
+#ledger-content h3 { margin: 1.2rem 0 .4rem; font-size: 1rem; }
+.ledger-list { list-style: none; margin: 0; padding: 0; }
+.ledger-list li { padding: .5rem 0; border-bottom: 1px solid var(--line); }
+.ledger-list strong { margin-right: .6rem; }
+.ledger-list small { display: block; color: var(--muted); font-size: .86rem; }
+.ledger-list .text-button { display: block; padding: 0; }
+.ledger-stats { padding: .8rem 0; color: var(--bronze); font-weight: 700; }
+.ledger-note { color: var(--muted); font-size: .9rem; }
+.log-day { color: var(--seal); font: 700 .9rem var(--font-title); }
+#reset-dialog { max-width: 27rem; padding: 1.25rem; border-top-color: var(--seal); }
+#reset-title { font: 700 1.5rem var(--font-title); margin: 0 0 .6rem; }
+#reset-error { color: var(--seal); margin-top: .6rem; }
+.reset-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.reset-actions button { padding: .5rem .85rem; min-height: 2.75rem; border: 1px solid var(--control-line); background: var(--panel); color: var(--ink); font: inherit; cursor: pointer; }
+#reset-confirm { background: var(--seal); color: white; border-color: var(--seal); }
+@media (max-width: 48rem) {
+  .binding-inner, .atlas-shell { width: calc(100% - 2rem); }
+  .field-layout { grid-template-columns: 1fr; }
+  .map-column { display: contents; }
+  .atlas-figure { order: 0; } .local-sheet { order: 1; } .deed-sheet { order: 2; margin-top: 0; }
+  .water-notice { order: 1; margin: 0; }
+  .atlas-header { align-items: start; }
+  .almanac { padding-left: .65rem; }
+  .almanac strong { font-size: 1.25rem; }
+}
+@media (max-width: 28rem) {
+  .water-notice { grid-template-columns: 1fr; gap: 0; }
+  .water-notice img { height: 6.5rem; }
+  .water-notice > div { padding: .7rem .85rem; }
+  .binding-inner { flex-wrap: wrap; gap: 0 .5rem; }
+  .binding nav { margin-inline-start: auto; }
+  .binding-inner,.atlas-shell { width: calc(100% - 2rem); }
+  .wordmark { font-size: 1rem; gap: .4rem; letter-spacing: 0; }
+  .binding nav { gap: .25rem; }
+  .binding button { font-size: .8rem; }
+  .book-seal { width: 1.4rem; height: 1.4rem; }
+  .pin span { padding: .24rem .43rem; }
+  .atlas-figure figcaption { padding: .48rem; font-size: .75rem; }
+  .atlas-header { padding-top: 1rem; }
+  .atlas-header p { font-size: .86rem; }
+  .atlas-header h1 { font-size: 1.9rem; }
+}

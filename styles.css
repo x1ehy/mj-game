@@ -1,0 +1,528 @@
+:root {
+  color-scheme: light;
+  --paper: #eee9df;
+  --panel: #f8f4eb;
+  --ink: #232823;
+  --muted: #645d4f;
+  --line: #d4c8b2;
+  --control-line: #a59b85;
+  --seal: #963d30;
+  --seal-pale: #f1e0d3;
+  --bronze: #356054;
+  --bronze-pale: #deebe1;
+  --arena: #252d27;
+  --arena-muted: #ddd2bd;
+  --font-ui: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
+  --font-title: "STZhongsong", "Songti SC", "Noto Serif CJK SC", SimSun, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font: 1rem/1.55 var(--font-ui);
+}
+
+h1, h2, p, dl, dd { margin: 0; }
+
+.game {
+  width: min(100% - 3rem, 71rem);
+  margin-inline: auto;
+  padding-block: clamp(1.5rem, 5vw, 3.75rem) 3rem;
+}
+
+.case-header {
+  margin-block-end: 1.6rem;
+}
+
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-block-end: 1rem;
+  color: var(--bronze);
+  font-size: .875rem;
+}
+
+.masthead strong {
+  border-inline-end: 1px solid var(--control-line);
+  padding-inline-end: .7rem;
+  font-weight: 900;
+}
+
+h1 {
+  font: 800 clamp(1.75rem, 4vw, 3rem)/1.14 var(--font-title);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.premise {
+  margin-block-start: .65rem;
+  color: var(--muted);
+}
+
+.battle {
+  display: grid;
+  grid-template-columns: minmax(0, 1.66fr) minmax(19rem, 1fr);
+  border: 1px solid var(--control-line);
+  background: var(--panel);
+}
+
+.arena {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-width: 0;
+  color: var(--panel);
+  background: var(--arena);
+}
+
+.arena-art {
+  position: relative;
+  isolation: isolate;
+  min-height: clamp(18rem, 31vw, 23rem);
+  overflow: hidden;
+  background: var(--arena) url("art/locations/alchemy-room.webp") center 56% / cover no-repeat;
+}
+
+.arena-label {
+  position: absolute;
+  z-index: 2;
+  top: .9rem;
+  left: .9rem;
+  padding: .25rem .55rem;
+  color: var(--panel);
+  background: var(--arena);
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.location {
+  right: .9rem;
+  left: auto;
+  color: var(--arena-muted);
+}
+
+.player-fighter, .furnace {
+  position: absolute;
+  bottom: 8%;
+  width: 42%;
+  height: 76%;
+}
+
+.furnace {
+  inset-inline-end: 5%;
+  display: block;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 .4rem .35rem #171915bb);
+}
+
+.player-fighter {
+  inset-inline-start: 5%;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.player-fighter figcaption {
+  padding: .13rem .55rem;
+  color: var(--panel);
+  background: var(--arena);
+  font-size: .875rem;
+}
+
+.paper-disciple {
+  --cutout-edge: #2c2527;
+  --robe: #d5bd91;
+  --skin: #906c8b;
+  --gauntlet: #bc8d4e;
+  position: relative;
+  width: min(91%, 10.5rem);
+  height: min(100% - 1.75rem, 13rem);
+  filter: drop-shadow(0 .35rem .25rem #171915bb);
+  transform-origin: 50% 95%;
+}
+
+.paper-disciple > span, .paper-disciple span::before, .paper-disciple span::after {
+  position: absolute;
+}
+
+.disciple-boots {
+  inset: 75% 25% 2% 22%;
+}
+
+.disciple-boots::before, .disciple-boots::after {
+  content: "";
+  bottom: 0;
+  width: 47%;
+  height: 100%;
+  border: 2px solid var(--cutout-edge);
+  border-radius: 18% 20% 25% 20%;
+  background: #473c34;
+}
+
+.disciple-boots::after { right: 0; }
+
+.disciple-robe {
+  inset: 35% 20% 13% 12%;
+  overflow: hidden;
+  border: clamp(2px, .3vw, 4px) solid var(--cutout-edge);
+  border-radius: 31% 34% 10% 9%;
+  background: var(--robe);
+}
+
+.disciple-robe::before {
+  content: "";
+  inset: -18% 28% 0 auto;
+  width: 11%;
+  height: 110%;
+  background: #f5e4be;
+  transform: rotate(31deg);
+}
+
+.disciple-robe::after {
+  content: "";
+  inset: 67% 0 auto;
+  height: 10%;
+  background: #594639;
+}
+
+.disciple-head {
+  inset: 4% 23% 56% 27%;
+  border: clamp(2px, .3vw, 4px) solid var(--cutout-edge);
+  border-radius: 49% 43% 29% 33%;
+  background: var(--skin);
+  transform: rotate(-5deg);
+}
+
+.disciple-head::before, .disciple-head::after {
+  content: "";
+  right: 10%;
+  height: 6%;
+  border-radius: 100%;
+  background: var(--cutout-edge);
+}
+
+.disciple-head::before { top: 48%; width: 50%; transform: rotate(-8deg); }
+.disciple-head::after { top: 73%; width: 32%; transform: rotate(9deg); }
+
+.disciple-glove {
+  inset: 31% 4% 40% 72%;
+  border: clamp(2px, .3vw, 4px) solid var(--cutout-edge);
+  border-radius: 36% 32% 18% 18%;
+  background: var(--gauntlet);
+  transform: rotate(-24deg);
+  transform-origin: center bottom;
+}
+
+.disciple-glove::after {
+  content: "";
+  inset: auto 0 17%;
+  height: 9%;
+  background: #725034;
+}
+
+.arena-art[data-effect="penalty"] .paper-disciple { animation: flinch 340ms ease-out; }
+.arena-art[data-effect="interrupt"] .disciple-glove { animation: raise-glove 320ms ease-out; }
+
+.furnace-effect {
+  position: absolute;
+  z-index: 2;
+  top: 55%;
+  left: 76%;
+  pointer-events: none;
+}
+
+.arena-art:is([data-effect="penalty"], [data-effect="interrupt"]) .furnace-effect {
+  width: 1.3rem;
+  height: 2rem;
+  border: 2px solid var(--panel);
+  background: var(--seal);
+  animation: fly-paper 340ms ease-out both;
+}
+
+.arena-art[data-effect="interrupt"] .furnace-effect {
+  animation-name: stop-paper;
+}
+
+.arena-art[data-effect="review"] .furnace-effect {
+  top: 50%;
+  width: 2.1rem;
+  aspect-ratio: 1;
+  border: 3px double var(--seal);
+  background: var(--panel);
+  animation: check-paper 290ms ease-out both;
+}
+
+.arena-art[data-effect="cool"] .furnace-effect {
+  top: 32%;
+  left: 73%;
+  width: 2rem;
+  aspect-ratio: 1;
+  border: 3px solid var(--arena-muted);
+  border-radius: 50%;
+  animation: release-steam 380ms ease-out both;
+}
+
+.arena-art[data-effect="victory"] .furnace {
+  animation: rattle 340ms ease-out;
+  filter: grayscale(.46) drop-shadow(0 .4rem .35rem #171915bb);
+}
+
+.enemy {
+  display: grid;
+  gap: .55rem;
+  padding: .85rem 1.25rem 1rem;
+}
+
+.enemy-name, .player-stats dl {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .15rem .45rem;
+}
+
+.enemy h2, .player h2, .history h2 { font-size: 1rem; }
+
+.enemy-name p {
+  color: var(--arena-muted);
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.enemy-name strong { color: var(--panel); }
+
+.meter {
+  display: flex;
+  gap: .3rem;
+}
+
+.meter > span {
+  flex: 1;
+  height: .3rem;
+  background: var(--line);
+  transition: background-color 140ms ease;
+}
+
+.armor-meter > span { background: #64685c; }
+.armor-meter > .filled { background: #d7b97e; }
+.health-meter > .filled { background: var(--seal); }
+.spirit-meter > .filled { background: var(--bronze); }
+
+.dispatch {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1.05rem;
+  padding: clamp(1rem, 2.45vw, 1.8rem);
+  border-inline-start: 1px solid var(--control-line);
+}
+
+.announcement {
+  padding: .85rem 1rem;
+  border-inline-start: 3px solid var(--bronze);
+  background: var(--bronze-pale);
+}
+
+.announcement[data-tone="warning"], .announcement[data-tone="defeat"] {
+  border-inline-start-color: var(--seal);
+  background: var(--seal-pale);
+}
+
+.announcement-label {
+  color: var(--bronze);
+  font-size: .875rem;
+  font-weight: 700;
+}
+
+.announcement:is([data-tone="warning"], [data-tone="defeat"]) .announcement-label {
+  color: var(--seal);
+}
+
+.announcement h2 {
+  margin-block: .2rem;
+  font: 800 clamp(1.55rem, 2.55vw, 2rem)/1.2 var(--font-title);
+}
+
+.announcement p:last-child {
+  color: var(--muted);
+  font-size: .9375rem;
+}
+
+.player {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding-block: .15rem .75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.player-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(.6rem, 1.8vw, 1.05rem);
+  color: var(--muted);
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-stats strong { color: var(--ink); }
+.player-stats .meter { margin-block-start: .25rem; }
+
+.commands {
+  display: grid;
+  gap: .55rem;
+}
+
+.command {
+  display: grid;
+  gap: .08rem;
+  width: 100%;
+  min-height: 3.1rem;
+  padding: .56rem .75rem;
+  border: 1px solid var(--control-line);
+  border-radius: 0;
+  color: var(--ink);
+  background: var(--panel);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.command-primary, .retry {
+  border-color: var(--arena);
+  color: var(--panel);
+  background: var(--arena);
+}
+
+.command-name { font-weight: 800; }
+.command-description { color: var(--muted); font-size: .875rem; line-height: 1.45; }
+.command-primary .command-description { color: var(--arena-muted); }
+
+@media (hover: hover) {
+  .command:hover:not(:disabled) { border-color: var(--bronze); background: var(--bronze-pale); }
+  :is(.command-primary, .retry):hover:not(:disabled) { background: var(--bronze); }
+}
+
+.command:focus-visible {
+  outline: 2px solid var(--bronze);
+  outline-offset: 3px;
+}
+
+.command:disabled {
+  color: var(--muted);
+  background: var(--paper);
+  cursor: default;
+}
+
+.retry {
+  justify-items: center;
+  align-items: center;
+  font-weight: 800;
+}
+
+.history { margin-block-start: 1.45rem; }
+
+.history-list {
+  padding: 0;
+  margin: .5rem 0 0;
+  list-style: none;
+}
+
+.history-list > li {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: .4rem .75rem;
+  padding-block: .6rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .9375rem;
+}
+
+.history-list strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.noscript {
+  margin-block-end: 1rem;
+  color: var(--seal);
+}
+
+.screen-reader {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes fly-paper {
+  from { opacity: 1; transform: translate(0) rotate(-12deg); }
+  to { opacity: 0; transform: translate(clamp(-17rem, -33vw, -6rem), -1.1rem) rotate(-42deg); }
+}
+
+@keyframes stop-paper {
+  0% { opacity: 1; transform: rotate(-12deg); }
+  65% { opacity: 1; transform: translate(-1.2rem, -.5rem) rotate(-16deg); }
+  100% { opacity: 0; transform: translate(-1.2rem, .45rem) scale(.55); }
+}
+
+@keyframes check-paper {
+  0% { transform: translateY(-.6rem) rotate(-9deg); }
+  65% { opacity: 1; transform: rotate(-9deg) scale(.94); }
+  100% { opacity: 0; transform: rotate(-9deg); }
+}
+
+@keyframes release-steam {
+  from { opacity: .85; transform: scale(.46); }
+  to { opacity: 0; transform: translateY(-1.65rem) scale(1.3); }
+}
+
+@keyframes rattle {
+  25% { transform: translateX(-.4rem) rotate(-3deg); }
+  55% { transform: translateX(.38rem) rotate(2deg); }
+  to { transform: none; }
+}
+
+@keyframes flinch {
+  0%, 100% { transform: none; }
+  55% { transform: translateX(-.45rem) rotate(-6deg); }
+}
+
+@keyframes raise-glove {
+  0%, 100% { transform: rotate(-24deg); }
+  45% { transform: translateY(-.45rem) rotate(-4deg); }
+}
+
+@media (max-width: 49rem) {
+  .game { width: calc(100% - 2rem); }
+  .case-header { margin-block-end: 1rem; }
+  .masthead { margin-block-end: .65rem; }
+  h1 { font-size: clamp(1.65rem, 5vw, 2rem); }
+  .battle { grid-template-columns: 1fr; }
+  .arena-art { min-height: clamp(10.75rem, 49vw, 17rem); }
+  .dispatch { border-inline-start: 0; }
+  .enemy { padding: .65rem .85rem .8rem; }
+  .arena-label { top: .6rem; left: .6rem; }
+  .location { right: .6rem; left: auto; }
+}
+
+@media (max-width: 25rem) {
+  .history-list > li { grid-template-columns: 4.4rem 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition: none !important; }
+}
