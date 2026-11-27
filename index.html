@@ -8,7 +8,7 @@
   <title>青瓦郡 · 爱慕杰修仙志</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="atlas.css">
-  <link rel="stylesheet" href="character.css">
+  <link rel="stylesheet" href="character.css?v=campus">
   <script src="encounters.js" defer></script>
   <script src="water-case.js" defer></script>
   <script src="world.js" defer></script>
@@ -90,7 +90,7 @@
         <div class="arena-art" id="arena-art">
           <span class="arena-label" id="round-number">第 1 回合</span>
           <span class="arena-label location" id="battle-place"></span>
-          <figure class="player-fighter">
+          <figure class="player-fighter photo-fighter">
             <div class="hero-stage" data-hero-art aria-hidden="true"><span class="snap-mark">啪</span></div>
             <figcaption>灭霸</figcaption>
           </figure>
@@ -157,23 +157,9 @@
     </div>
   </dialog>
   <template id="hero-art">
-    <span class="hero-drawing">
-      <span class="hero-shadow"></span>
-      <span class="hero-legs"></span>
-      <span class="hero-sleeve"></span>
-      <span class="hero-coat">
-        <span class="hero-collar"></span>
-        <span class="hero-pocket"><span></span></span>
-      </span>
-      <span class="hero-head">
-        <span class="hero-ear"></span>
-        <span class="hero-brow"></span>
-        <span class="hero-eyes"></span>
-        <span class="hero-nose"></span>
-        <span class="hero-mouth"></span>
-        <span class="hero-chin"></span>
-      </span>
-      <span class="hero-arm"><span></span></span>
+    <span class="hero-portrait">
+      <img class="hero-photo hero-stern" src="art/characters/thanos-campus-stern.png" width="578" height="444" alt="">
+      <img class="hero-photo hero-laugh" src="art/characters/thanos-campus-laugh.png" width="682" height="722" alt="">
     </span>
   </template>
   <p class="screen-reader" id="update" role="status" aria-atomic="true"></p>
