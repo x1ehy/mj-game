@@ -184,11 +184,48 @@ body[data-crossing] :is(.binding, #atlas-view, #battle-view) { pointer-events: n
 .slot-filter { display: flex; flex-wrap: wrap; gap: .25rem; margin: .65rem 0; }
 .slot-choice { font-size: .82rem; }
 .slot-choice[aria-pressed="true"] { background: #334f40; color: #fff5db; }
+.item-art {
+  display: block; flex: none; width: 2.6rem; aspect-ratio: 1; align-self: center;
+  border: 1px solid #b8ac8f; background: #eee1c5 url("art/items/equipment-atlas.webp") 0 0 / 300% 300% no-repeat;
+}
+.item-art-empty { background: #efe9da; border-style: dashed; }
+.slot-entry { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .45rem; align-items: center; min-height: 3.3rem; }
+.slot-entry .item-art { width: 2rem; }
+.slot-entry:not([data-worn]) strong { color: var(--muted); font-weight: 400; }
+.pack-item[data-gear] { grid-template-columns: auto minmax(0, 1fr) auto; }
+.pack-item-label { min-width: 0; }
+.pack-item-label small { display: block; text-align: start; }
+.pack-item .pack-quantity { align-self: start; }
+.gear-heading { display: flex; gap: .55rem; align-items: flex-start; margin-block-end: .45rem; }
+.gear-heading .item-art { width: clamp(2.55rem, 7vw, 3.6rem); align-self: flex-start; }
+.gear-heading .gear-name { margin: 0; }
+.gear-heading small { display: block; font-size: .78rem; margin-block-start: .15rem; }
+.gear-preview:has(.gear-column + .gear-column) .gear-heading { min-height: 5rem; }
+.place-vignette {
+  height: clamp(3.3rem, 5.2vh, 4.3rem); border-block: 1px solid #a29374; margin: .45rem 0 .55rem;
+  background: #d4c4a2 url("art/locations/qingwa-atlas.webp") 10% 75% / 250% auto no-repeat;
+}
+.place-vignette[data-site="town"] { background-position: 17% 31%; }
+.place-vignette[data-site="academy"] { background-position: 97% 21%; }
+.place-vignette[data-site="canal"] { background-position: 91% 73%; }
+.starter-tip {
+  margin-block: .6rem; padding: .42rem .65rem; border-inline-start: 2px solid var(--bronze);
+  background: var(--bronze-pale); color: var(--ink); font-size: .82rem; line-height: 1.55;
+}
+.starter-tip strong { margin-inline-end: .2rem; color: var(--bronze); }
+.local-actions .discovery-command { border-inline-start: 4px solid #91623d; }
+.discovery-command .command-name::before {
+  content: ""; display: inline-block; width: .5rem; height: .5rem; margin-inline-end: .5rem;
+  border: 1px solid currentColor; transform: rotate(45deg); vertical-align: .17em;
+}
+#toggle-tips { margin-inline-end: 1rem; }
 @media (min-width: 64rem) and (min-height: 34rem) {
   .atlas-dispatch { height: 7.6rem; align-content: start; overflow: auto; margin: 0; }
   body:has(#atlas-view:not([hidden])) .binding nav { top: calc(var(--edge) + 7.95rem); }
   .local-sheet { top: calc(var(--edge) + 11.15rem); }
-  #ledger .character-layout, #ledger .pack-layout { grid-template-columns: minmax(0,1fr); }
+  #ledger .character-layout { grid-template-columns: minmax(9.5rem, 1fr) minmax(0, 1.6fr); gap: 1rem; }
+  #ledger .character-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #ledger .pack-layout { grid-template-columns: minmax(0,1fr); }
   #ledger .pack-items { display: flex; flex-wrap: wrap; gap: .35rem; }
   #ledger .pack-items > li { flex: 1 1 8rem; }
 }

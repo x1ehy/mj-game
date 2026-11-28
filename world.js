@@ -21,14 +21,16 @@ const World = ((combat, water, rain) => {
     ...water.items,
     witness: ["水脚收条", "灭建国留着的旧收条，背面有当年的田号。"],
     record: ["地册拓片", "学宫旧档里的底册。和水脚收条一对，田主便有名有姓。"],
-    herb: ["引气草", "突破需 1 株。在青瓦镇可换 2 灵石，也能用来还火箭的人情。"],
+    herb: ["引气草", "用于突破境界。在青瓦镇可换 2 灵石，也能用来还火箭的人情。"],
     seal: ["分水令", "引水诀耗 1 灵力，攻击并打断符咒或蓄雷。托尔的贴地横锤仍会落下。"],
     lid: ["裂纹炉盖", "每场首次受击最多抵消体力上限的四成。可主动架盖挡重击，下一回合反震。"],
     shoes: ["踩泥草鞋", "灭建国用旧稻秆编的。帮他修完灭家村的田埂就能拿到。"],
     jacket: ["补过三回的校服", `里衬缝了三层，肘上还印着上一任主人的班号。火箭在青瓦镇摆摊时卖 ${jacketPrice} 灵石。`],
     cap: ["丹房护头帽", "学宫库房备着厚毡帽。击败点名的丹炉后可领一顶，防御 +200。"],
+    tallyBand: ["点名簿护额", "绑点名簿的旧皮带改成了护额，内衬还垫了半张迟到单。来自丹炉停摆后的学宫窗台。"],
     trousers: ["渡口下田裤", "村口管事缝的厚布裤。修好田埂后可去领，体力上限 +1,200。"],
     buckle: ["雷纹铁扣", "托尔拿锤子把验收章压在废铁上。首次赢下废渠的切磋可得。"],
+    reedBell: ["渡口铜铃坠", "渡工用旧铃铛做的小坠子，摇一下能听见里面的砂。田有着落后，可在灭家村渡口找到。"],
     returnSlip: ["丹房退货单", `可在青瓦镇找火箭换 ${slipValue} 灵石，或在学宫丹房库房换 ${slipPills} 枚${combat.pill.name}。兑过即收回。`],
     pill: [combat.pill.name, `战斗中占用一回合，恢复 ${combat.pill.recovery} 点灵力。青瓦镇药摊售价 ${pillPrice} 灵石。`],
   };
@@ -39,10 +41,48 @@ const World = ((combat, water, rain) => {
     taken: ["买家接管", "管事在田头支起收租摊。可以在村里签佃约，也能带两份凭证到学宫申诉。"],
   };
   const boundary = 5;
-  const breakthrough = { xp: 4, herbs: 1 };
+  const realmNames = { early: "炼气初期", middle: "炼气中期", late: "炼气后期" };
+  const breakthroughs = {
+    early: { target: "middle", xp: 4, herbs: 1 },
+    middle: { target: "late", xp: 12, herbs: 3 },
+  };
+  const canalFinds = {
+    commons: ["帮轮值农户分药苗", "灭霸按三家的田亩分完药苗，轮值的农户又把剩下的两株塞回他手里。"],
+    franchise: ["帮火箭捞一张水票", "火箭说那张票在水里也算有效。灭霸顺着水势一捞，连票带两株引气草一起捞了回来。"],
+    warranty: ["听一听保修铜管的杂音", "灭霸照着铜管的断续声运了半周天，才发现是两株引气草堵住了管口。"],
+    metered: ["看看售票凳下的水响", "售票凳底下卡了两株引气草。灭霸摸清暗流，把草拔下来，火箭在账上记了一笔「水下清障」。"],
+  };
+  const discoveries = {
+    ferryBasket: {
+      place: "village", available: s => s.deed === "owned" || s.deed === "leased",
+      name: "替渡工翻一翻竹篮", desc: "田有着落后，渡工把绑在船头的旧竹篮解了下来。可得一件配饰。",
+      reward(s) { gain(s, "reedBell"); },
+      text: "篮底掉出一串小铃。渡工说有回夜里摇了半天，来的全是鸭子，干脆送给灭霸当坠子。体力上限 +700、身法 +60。",
+    },
+    bridgeTea: {
+      place: "town", available: s => s.day % 2 === 0,
+      name: "替桥头茶摊认一壶茶", desc: "偶数日出摊。帮摊主认清送错的茶，得 2 灵石和 1 枚回气丸。",
+      reward(s) { s.stones += 2; gain(s, "pill"); },
+      text: "壶嘴朝河的是送给渡工的。灭霸端走前，那壶茶已经被桥边的鸭子试过温。摊主付了 2 灵石，还给了 1 枚回气丸。",
+    },
+    furnaceLedger: {
+      place: "academy", available: s => s.cleared.furnace,
+      name: "查看丹房窗台上的点名簿", desc: "翻到点名簿的最后一页，可得一件头部装备。",
+      reward(s) { gain(s, "tallyBand"); },
+      text: "点名簿最后一页只记着丹炉自己迟到了。灭霸取下松脱的绑带，折成点名簿护额，体力上限 +900、防御 +100。",
+    },
+    canalFind: {
+      place: "canal", available: s => Boolean(s.waterCase?.outcome),
+      name: s => canalFinds[s.waterCase.outcome][0],
+      desc: "顺着水声查一查，可得 3 修为和 2 株引气草。",
+      reward(s) { s.xp += 3; gain(s, "herb", 2); },
+      text: s => canalFinds[s.waterCase.outcome][1] + "获得 3 修为、2 株引气草。",
+    },
+  };
   function fresh() {
-    return { version: 4, day: 1, place: "village", deed: "pending", stones: 3, xp: 0, waterCase: null,
-      trained: false, equipped: combat.loadout(), trackedQuest: null, debt: false, introduced: false, lesson: false,
+    return { version: 5, day: 1, place: "village", deed: "pending", stones: 3, xp: 0, waterCase: null,
+      realm: "early", discoveries: [], hideTips: false, equipped: combat.loadout(), trackedQuest: null,
+      debt: false, introduced: false, lesson: false,
       broker: false, inventory: {}, cleared: { furnace: false, sluice: false }, battle: null,
       journal: [{ day: 1, text: "灭霸回村那天，告示上写着「无主灵田一亩」。灭建国正蹲在那亩田里拔草。" }] };
   }
@@ -57,10 +97,16 @@ const World = ((combat, water, rain) => {
     return [5, 7].includes(s.battle.maxHealth) ? 2000 : 100;
   }
   function upgradeSave(s) {
-    if (s.version === 4) return s;
-    s.deedLate = s.deed === "taken" || s.journal.some(entry => entry.text.startsWith("第五天交割。"));
-    s.equipped = combat.loadout(s.equipped);
-    s.trackedQuest = null;
+    if (s.version === 5) return s;
+    s.realm = s.trained ? "middle" : "early";
+    delete s.trained;
+    s.discoveries = [];
+    s.hideTips = false;
+    if (s.version < 4) {
+      s.deedLate = s.deed === "taken" || s.journal.some(entry => entry.text.startsWith("第五天交割。"));
+      s.equipped = combat.loadout(s.equipped);
+      s.trackedQuest = null;
+    }
     const b = s.battle;
     if (b && s.version < 3) {
       const fullHealth = combat.attributes(s).maxHealth;
@@ -75,7 +121,7 @@ const World = ((combat, water, rain) => {
         log(s, "学宫今日才收到水表停摆的报修单。明日到灭家村田头开听，旧账从今天起公示。");
       }
     }
-    s.version = 4;
+    s.version = 5;
     return s;
   }
   function passDay(s) {
@@ -112,7 +158,11 @@ const World = ((combat, water, rain) => {
     const scene = rain.scene(s, place);
     return scene || localLore(s, place);
   }
-  function realm(s) { return s.trained ? "炼气中期" : "炼气初期"; }
+  function realm(s) { return realmNames[combat.realmId(s)]; }
+  function breakthrough(s) {
+    const next = breakthroughs[combat.realmId(s)];
+    return next && { ...next, name: realmNames[next.target] };
+  }
   function gain(s, id, count = 1) { s.inventory[id] = (s.inventory[id] || 0) + count; }
   function relation(s, id) {
     if (id === "elder") return s.deed === "owned" ? "愿替你引荐" : s.deed === "leased" ? "与你合耕" : "同乡";
@@ -246,17 +296,31 @@ const World = ((combat, water, rain) => {
     }, s.stones < pillPrice);
   }
   function dailyOrders(s, add) {
-    if (!s.trained) {
+    const next = breakthrough(s);
+    if (next) {
       add("train", "就地修炼", "耗时 1 日，修为增加 2。", () => {
         s.xp += 2; passDay(s); log(s, `吐纳一周天，修为增加 2。现有 ${s.xp} 点修为。`);
       });
-      if (s.xp >= breakthrough.xp) add("advance", "冲击炼气中期", `需 ${breakthrough.xp} 修为、${breakthrough.herbs} 株引气草。体力、灵力、攻击、防御和身法提升。`, () => {
-        s.xp -= breakthrough.xp; gain(s, "herb", -breakthrough.herbs); s.trained = true;
+      if (s.xp >= next.xp) add("advance", `冲击${next.name}`, `需 ${next.xp} 修为、${next.herbs} 株引气草。不耗日，提升战斗属性。`, () => {
+        s.xp -= next.xp; gain(s, "herb", -next.herbs); s.realm = next.target;
         const { maxHealth, maxSpirit } = combat.attributes(s);
-        log(s, `灭霸迈入炼气中期。战斗体力升至 ${maxHealth}、灵力升至 ${maxSpirit}，普通攻击也更重了。`);
-      }, (s.inventory.herb || 0) < breakthrough.herbs);
+        log(s, `灭霸迈入${next.name}。战斗体力升至 ${maxHealth}、灵力升至 ${maxSpirit}，普通攻击也更重了。`);
+      }, (s.inventory.herb || 0) < next.herbs);
     }
     add("wait", "歇脚一日", "时过一日，看看明日谁会路过。", () => { passDay(s); log(s, `在${places[s.place].name}歇过一夜。`); });
+  }
+
+  function discoveryOrders(s, add) {
+    for (const [id, event] of Object.entries(discoveries)) {
+      if (event.place !== s.place || s.discoveries.includes(id) || !event.available(s)) continue;
+      const name = typeof event.name === "string" ? event.name : event.name(s);
+      add(id, name, event.desc + "不耗日。", () => {
+        event.reward(s);
+        s.discoveries.push(id);
+        const scene = typeof event.text === "string" ? event.text : event.text(s);
+        log(s, scene, "discovery");
+      }, false, "discovery");
+    }
   }
 
   const conversations = { elder: elderOrders, rocket: rocketOrders, stark: starkOrders };
@@ -265,9 +329,10 @@ const World = ((combat, water, rain) => {
   function orders(s) {
     if (s.battle) return [];
     const result = [];
-    const add = (id, name, desc, run, disabled = false) => result.push({ id, name, desc, run, disabled });
+    const add = (id, name, desc, run, disabled = false, kind) => result.push({ id, name, desc, run, disabled, kind });
     rain.orders(s, add, log, passDay);
     water.orders(s, add, log);
+    discoveryOrders(s, add);
     for (const [id, conversation] of Object.entries(conversations)) {
       if (locationOf(id, s.day, s) === s.place) conversation(s, add);
     }
@@ -333,7 +398,7 @@ const World = ((combat, water, rain) => {
     if (b.outcome === "defeat") log(s, `灭霸败给${combat.foes[b.id].title}，可以重整旗鼓或回地图。`);
     return true;
   }
-  return { places, people, items, deeds, boundary, breakthrough, fresh, realm, relation, describe, armorScale, upgradeSave,
+  return { places, people, items, deeds, boundary, realmNames, discoveryIds: Object.keys(discoveries), breakthrough, fresh, realm, relation, describe, armorScale, upgradeSave,
     locationOf, orders, act, travel, equip, fight, victoryReport };
 })(typeof module !== "undefined" && module.exports ? require("./encounters.js") : Encounters,
    typeof module !== "undefined" && module.exports ? require("./water-case.js") : WaterCase,

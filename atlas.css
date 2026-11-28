@@ -68,7 +68,6 @@ button:hover:not(:disabled) { text-decoration-color: currentColor; }
 .game { padding-top: 1.2rem; }
 .masthead button { padding: 0; color: var(--bronze); }
 .arena-art[data-foe="sluice"] { --scene: url("art/locations/sluice.webp"); background-position: right 45%; }
-.arena-art[data-foe="thor"] { --scene: url("art/locations/thor-inspection.webp"); background-position: right 6%; }
 .arena-art[data-foe="sluice"]:is([data-gesture="attack"],[data-gesture="interrupted"]) .furnace-effect { width: 1.35rem; height: 1.35rem; border: 4px double #b78a48; border-radius: 50%; background: #4f432d; }
 dialog { border: 1px solid var(--control-line); border-top: 4px solid var(--bronze); padding: 0 1.35rem 1.35rem;
   background: var(--panel); color: var(--ink); width: min(36rem,calc(100% - 2rem)); max-height: 82dvh; overflow: auto; }

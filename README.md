@@ -23,7 +23,9 @@
 | 先修炼或战斗 | 去废渠采引气草，积攒 4 修为可突破炼气中期。打赢功德水表能拿分水令，次日到灭家村参加水费听证。 |
 | 看世界自行变化 | 花四天游历或歇脚。若此前无人干预，第五日管事就来收田。之后仍可签佃约，或补齐证据和 2 灵石申诉。 |
 
-世界规则在 [world.js](world.js)，水案的日程、提案和裁决在 [water-case.js](water-case.js)，敌方预告与伤害结算在 [encounters.js](encounters.js)，界面和存档在 [game.js](game.js)。在安装了 Node.js 的开发环境运行 `node --test` 可验证现有路线。青瓦郡目前包含四个地点、两件有期限的争端、两场掉落法器的遭遇、一场可重复的切磋和一次境界突破。
+世界规则在 [world.js](world.js)，水案的日程、提案和裁决在 [water-case.js](water-case.js)，敌方预告与伤害结算在 [encounters.js](encounters.js)，界面和存档在 [game.js](game.js)。在安装了 Node.js 的开发环境运行 `node --test` 可验证现有路线。
+
+新手提示会在开局、领到草鞋和开始切磋时出现，可以在郡中纪事关闭或恢复。带「见闻」的地点行动会随日子和当地事务变化，完成后奖励自动入包。炼气中期后可继续修炼，累积 12 修为和 3 株引气草即可在地图上突破至炼气后期。人物页可查看进度。
 
 ### 青瓦郡的第二件事 · 水表拆了，谁来交水费？
 
@@ -107,7 +109,7 @@
 | 灭霸 · 炼气中期 | 24,000 | 6,000 | 2,400 | 400 |
 | 托尔 | 16,000 | 3,200 | 1,000 | 300 |
 
-基础伤害取「攻击 + 招式威力 − 对方防御」，保底为攻击的 5%，向上取整。术法威力从初期的 2,000 升至中期的 4,000。引水诀附加一倍术法威力，反震附加两倍。普攻抓到破绽可额外附加一倍术法威力。裂纹炉盖在每场首次受击时，最多抵消自身体力上限的四成。初期灭霸普攻托尔打 2,000 点，引水诀打 4,000 点。突破后分别为 5,000 和 9,000 点。
+基础伤害取「攻击 + 招式威力 − 对方防御」，保底为攻击的 5%，向上取整。炼气初、中、后期的术法威力分别为 2,000、4,000、5,000。引水诀附加一倍术法威力，反震附加两倍。普攻抓到破绽可额外附加一倍术法威力。裂纹炉盖在每场首次受击时，最多抵消自身体力上限的四成。忽略装备加成与破绽，三个境界普攻托尔分别打 2,000、5,000、6,800 点。
 
 学宫炼丹房里可以挑战考勤丹炉，废渠闸口可以挑战功德水表。先读对手预告，再选普通攻击、打响指或已装备法器的指令。打赢后掉落自动入包，每场遭遇只掉落一次。裂纹炉盖能减轻每场战斗的第一次伤害。分水令提供引水诀，能同时攻击和打断。失败可以重试，也可回到地图继续游历。
 
@@ -126,6 +128,21 @@
 | 雷纹铁扣 | 废渠首次赢下托尔时掉落。装备后攻击 +700。 |
 | 丹房退货单 | 打赢考勤丹炉后找钢铁侠开单。交给镇上的火箭换 4 灵石，或在学宫库房换 2 枚回气丸。 |
 | 回气丸 | 青瓦镇药摊每枚 2 灵石。服药占一回合，恢复 1 点灵力，优先度为 0。若先被打倒，药丸留在背包里。 |
+
+<details>
+<summary>试锤台背景和九件装备插图（内置 ImageGen）</summary>
+
+[试锤台空场](art/locations/sluice-trial-ground.webp) 用作托尔战的背景。角色和锤臂沿用旧版 [试锤台插画](art/locations/thor-inspection.webp) 中的画面，通过两层裁切显示。地点侧栏从山河图取景。[装备图集](art/items/equipment-atlas.webp) 按三行三列排布，CSS 显示对应格子。
+
+试锤台背景提示词
+
+> Wide panoramic landscape background for a Chinese cultivation browser game battle at a historic rural sluice and small inspection platform. No characters, people, humanoids, weapons, signs, lettering, writing or UI. Landscape 16:9. Visually consistent with a Chinese antique woodblock print in charcoal contour and fine hatch, warm toned ivory paper, muted blue jade river, warm ochre stone, red muted clouds under evening light. Broad continuous level worn stone slab foreground all across the bottom 42 percent where the two characters will later stand, simple and quiet. Across mid distance center: stone embankment with a compact wooden sluice and river spilling through it. A distant stone arched bridge, village rooftops and layered mountains under a pale sky. Keep both left and right thirds visually uncluttered for character silhouettes. Crisp etched antique architecture, weathered flagstone lines, restrained color. The occupied stage area should be even, no large objects in front and no figure silhouettes in the background.
+
+装备图集提示词
+
+> Create ONE game inventory texture atlas for an original Chinese cultivation web RPG. Square image, exact regular 3-by-3 invisible grid, nine unique equipment items, each centered exactly in its own square cell, generous blank margins around each object, nothing crossing into the next cell. Entire image on a continuous flat pale warm ivory paper (#efe4cb). No grid lines, frames, shadows spilling into another cell, text, numbers, marks, letters, watermark, labels, people or hands. Read order is strict. Row 1 left to right: worn woven rice-straw shoes (one pair), blue-and-white Chinese school track jacket neatly folded, dark indigo thick work trousers folded. Row 2: soft worn russet felt workshop cap, slim tan leather forehead band reinforced with parchment strips, a rust-patinated metal rectangular belt buckle with a simple engraved lightning bolt. Row 3: small bronze ferry bell on a knotted red cord, heavy circular cracked dark bronze cauldron lid with a knob, a flat jade-green rectangular water-control talisman engraved with lines resembling flowing water (no writing). In each cell make a single clearly separated readable silhouette at 40 pixels, cover about 70 percent of cell width or height. Antique Chinese woodblock ink and muted mineral pigments, precise observed material textures, realistic objects treated as restrained vintage book illustrations. Equal cell sizes, all nine objects fully visible, no additional objects.
+
+</details>
 
 <details>
 <summary>本版地图与闸口原画（内置 ImageGen）</summary>

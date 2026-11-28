@@ -127,7 +127,7 @@ test("speed breaks priority ties; a faster knockout cancels the other move and i
   assert.match(s.battle.turns[0].text, /托尔先手.*防御抵去 1200/);
   assert.equal(s.battle.spirit, 2);
   assert.equal(s.battle.armor, 16000);
-  s.trained = true;
+  s.realm = "middle";
   play(s, "retry");
   s.battle.duel.move = "jab";
   play(s, "hit");
@@ -207,7 +207,7 @@ test("a wounded middle-realm duel keeps its health ratio, enemy plan and cooldow
 
 test("artifacts scale with the wearer's realm in preview and in combat", () => {
   const s = inspection("seal");
-  s.trained = true;
+  s.realm = "middle";
   s.battle = C.start("thor", s);
   s.battle.duel.move = "slam";
   assert.match(C.artifactEffects("seal", s)[0].desc, /4000/);
