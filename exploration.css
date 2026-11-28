@@ -184,6 +184,13 @@ body[data-crossing] :is(.binding, #atlas-view, #battle-view) { pointer-events: n
 .slot-filter { display: flex; flex-wrap: wrap; gap: .25rem; margin: .65rem 0; }
 .slot-choice { font-size: .82rem; }
 .slot-choice[aria-pressed="true"] { background: #334f40; color: #fff5db; }
+.starter-tip {
+  margin-block: .6rem; padding: .42rem .65rem; border-inline-start: 2px solid var(--bronze);
+  background: var(--bronze-pale); color: var(--ink); font-size: .82rem; line-height: 1.55;
+}
+.starter-tip strong { margin-inline-end: .2rem; color: var(--bronze); }
+.local-actions .discovery-command { border-inline-start: 4px solid #91623d; }
+#toggle-tips { margin-inline-end: 1rem; }
 @media (min-width: 64rem) and (min-height: 34rem) {
   .atlas-dispatch { height: 7.6rem; align-content: start; overflow: auto; margin: 0; }
   body:has(#atlas-view:not([hidden])) .binding nav { top: calc(var(--edge) + 7.95rem); }

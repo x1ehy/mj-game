@@ -44,10 +44,12 @@ const Encounters = (() => {
   const slots = { head: "头部", body: "身体", legs: "裤子", feet: "鞋子", accessory: "配饰", weapon: "武器" };
   const gear = {
     cap: { slot: "head", stats: { defense: 200 } },
+    tallyBand: { slot: "head", stats: { defense: 100, maxHealth: 900 } },
     jacket: { slot: "body", stats: { defense: 600 } },
     trousers: { slot: "legs", stats: { maxHealth: 1200 } },
     shoes: { slot: "feet", stats: { speed: 120 } },
     buckle: { slot: "accessory", stats: { attack: 700 } },
+    reedBell: { slot: "accessory", stats: { maxHealth: 700, speed: 60 } },
     lid: { slot: "weapon", stats: {} },
     seal: { slot: "weapon", stats: {} },
   };
@@ -90,9 +92,13 @@ const Encounters = (() => {
   const realms = {
     early: { maxHealth: 10_000, maxSpirit: 2, attack: 3000, defense: 1200, speed: 200, technique: 2000 },
     middle: { maxHealth: 24_000, maxSpirit: 3, attack: 6000, defense: 2400, speed: 400, technique: 4000 },
+    late: { maxHealth: 32_000, maxSpirit: 4, attack: 7800, defense: 3000, speed: 480, technique: 5000 },
   };
+  function realmId(world) {
+    return world.realm ?? (world.trained ? "middle" : "early");
+  }
   function attributes(world, equipped = world.equipped) {
-    const base = world.trained ? realms.middle : realms.early;
+    const base = realms[realmId(world)];
     const stats = { ...base };
     // A single item previews replacing its own slot; the other five stay in effect.
     const current = typeof world.equipped === "object" ? world.equipped : {};
@@ -265,7 +271,7 @@ const Encounters = (() => {
     }
     return true;
   }
-  return { foes, snap, stance, slots, gear, loadout, pill, attributes, artifactEffects, validPlan, start, intent, forecast, commands, turn };
+  return { foes, snap, stance, slots, gear, loadout, pill, realmId, attributes, artifactEffects, validPlan, start, intent, forecast, commands, turn };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = Encounters;

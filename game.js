@@ -18,11 +18,14 @@
 
   const isCount = n => Number.isSafeInteger(n) && n >= 0;
   function validSave(s) {
-    if (!s || ![1, 2, 3, 4].includes(s.version) || !Object.hasOwn(World.places, s.place) || !Object.hasOwn(World.deeds, s.deed)) return false;
+    if (!s || ![1, 2, 3, 4, 5].includes(s.version) || !Object.hasOwn(World.places, s.place) || !Object.hasOwn(World.deeds, s.deed)) return false;
     if (![s.day, s.stones, s.xp].every(isCount) || s.day < 1 || !s.inventory || !s.cleared) return false;
-    if (!["trained", "debt", "introduced", "lesson", "broker"].every(key => typeof s[key] === "boolean")) return false;
+    if (!["debt", "introduced", "lesson", "broker"].every(key => typeof s[key] === "boolean")) return false;
+    if (s.version < 5 && typeof s.trained !== "boolean") return false;
+    if (s.version === 5 && (typeof s.realm !== "string" || !Object.hasOwn(World.realmNames, s.realm) || typeof s.hideTips !== "boolean"
+      || !Array.isArray(s.discoveries) || !s.discoveries.every(id => World.discoveryIds.includes(id)))) return false;
     if (!Object.entries(s.inventory).every(([id, n]) => Object.hasOwn(World.items, id) && isCount(n))) return false;
-    if (s.version === 4) {
+    if (s.version >= 4) {
       if (!s.equipped || typeof s.equipped !== "object" || Array.isArray(s.equipped)
         || Object.keys(s.equipped).length !== Object.keys(Encounters.slots).length) return false;
       for (const slot of Object.keys(Encounters.slots)) {
@@ -36,13 +39,16 @@
     if (!Array.isArray(s.journal) || !s.journal.length || !s.journal.every(x => x && isCount(x.day) && typeof x.text === "string")) return false;
     const b = s.battle;
     if (b === null) return true;
-    const maxHealthOK = s.version >= 3 ? b?.maxHealth === Encounters.attributes(s, s.version === 3 ? Encounters.loadout(s.equipped) : s.equipped).maxHealth : [5, 7, 100, 140].includes(b?.maxHealth);
+    const fighter = s.version === 5 ? s : { trained: s.trained };
+    const hero = s.version >= 3 ? Encounters.attributes(fighter, s.version === 3 ? Encounters.loadout(s.equipped) : s.equipped) : null;
+    const maxHealthOK = hero ? b?.maxHealth === hero.maxHealth : [5, 7, 100, 140].includes(b?.maxHealth);
+    const spiritLimits = s.version === 5 ? [hero.maxSpirit] : [2, 3];
     return b && Object.hasOwn(Encounters.foes, b.id) && [b.round, b.health, b.maxHealth, b.spirit, b.maxSpirit, b.armor].every(isCount)
       && (b.snapReadyAt === undefined || isCount(b.snapReadyAt))
       && [b.sweepNext, b.counterReady].every(flag => flag === undefined || typeof flag === "boolean")
       && Encounters.validPlan(b) && (![5, 7].includes(b.maxHealth) || !b.duel)
       && (b.thorReward === undefined || (b.thorReward === true && b.id === "thor" && b.outcome === "victory" && s.inventory.buckle > 0))
-      && b.round > 0 && maxHealthOK && [2, 3].includes(b.maxSpirit)
+      && b.round > 0 && maxHealthOK && spiritLimits.includes(b.maxSpirit)
       && b.health <= b.maxHealth && b.spirit <= b.maxSpirit && b.armor <= Encounters.foes[b.id].armor / World.armorScale(s)
       && [null, "victory", "defeat"].includes(b.outcome) && Array.isArray(b.turns) && b.turns.length
       && b.turns.every(x => x && isCount(x.round) && typeof x.text === "string");
@@ -107,8 +113,29 @@
   function actionButton(option, primary = false) {
     const btn = el("button", undefined, primary ? "command command-primary" : "command");
     btn.type = "button"; btn.dataset.action = option.id; btn.disabled = !!option.disabled;
-    btn.append(el("span", option.name, "command-name"), el("span", option.desc, "command-description"));
+    if (option.kind === "discovery") btn.classList.add("discovery-command");
+    const name = option.kind === "discovery" ? "见闻 · " + option.name : option.name;
+    btn.append(el("span", name, "command-name"), el("span", option.desc, "command-description"));
     return btn;
+  }
+  function renderTips() {
+    const battle = state.battle;
+    let field = "", duel = "";
+    if (!state.hideTips) {
+      if (battle?.duel && battle.round === 1 && !battle.outcome) {
+        duel = "开打先看指令上的优先度。托尔举锤后，下一回合留意敌方预告。";
+      } else if (!battle) {
+        if (state.inventory.shoes && state.equipped.feet !== "shoes" && state.day <= 6) {
+          field = "草鞋已入包。打开背包的「装备 → 鞋子」即可穿上。";
+        } else if (state.day <= 2 && !state.inventory.witness) {
+          field = "点「定位」找下一步。确认动身才会赶路。";
+        }
+      }
+    }
+    $("field-tip").hidden = !field;
+    $("field-tip-copy").textContent = field;
+    $("duel-tip").hidden = !duel;
+    $("duel-tip-copy").textContent = duel;
   }
   function renderWaterCase(here) {
     const note = WaterCase.notice(state);
@@ -148,6 +175,7 @@
   }
   new ResizeObserver(layoutTrail).observe($("atlas-map"));
   function renderAtlas() {
+    renderTips();
     const here = selected === state.place;
     const place = World.places[selected];
     const preview = here ? state : structuredClone(state);
@@ -168,7 +196,8 @@
     route.textContent = FirstRain.ferry(state, selected) ? "乘索 · 当日抵达" : `赶路 1 日 · 第 ${visitDay} 日抵达`;
     $("hud-realm").textContent = World.realm(state);
     const heroStats = Encounters.attributes(state);
-    $("hud-cultivation").textContent = `修为 ${state.xp}${state.trained ? "" : " / " + World.breakthrough.xp}　灵石 ${state.stones}`;
+    const nextRealm = World.breakthrough(state);
+    $("hud-cultivation").textContent = `修为 ${state.xp}${nextRealm ? " / " + nextRealm.xp : ""}　灵石 ${state.stones}`;
     $("hud-gear").textContent = `装备 · ${Object.values(state.equipped).filter(Boolean).length} / 6`;
     $("hud-vitals").textContent = `体力上限 ${heroStats.maxHealth.toLocaleString("zh-CN")}　灵力上限 ${heroStats.maxSpirit}`;
     $("travel-hint").textContent = FirstRain.ferry(state, "village") ? "点灭家村 · 乘索当日回村" : "点地名探路 · 赶路耗一日";
@@ -224,6 +253,7 @@
     $(stat + "-meter").firstElementChild.style.width = (100 * value / max) + "%";
   }
   function renderBattle() {
+    renderTips();
     const b = state.battle, foe = Encounters.foes[b.id], info = Encounters.forecast(b, state);
     const won = b.outcome === "victory", lost = b.outcome === "defeat";
     $("case-title").textContent = foe.caseTitle; $("case-premise").textContent = foe.intro;
@@ -550,12 +580,12 @@
       stats.append(stat);
     }
     const cultivation = el("div", undefined, "cultivation");
-    const { xp, herbs } = World.breakthrough;
+    const next = World.breakthrough(state);
     const herbCount = state.inventory.herb || 0;
-    if (state.trained) cultivation.append(el("p", `当前修为 ${state.xp}`, "ledger-note"));
+    if (!next) cultivation.append(el("p", `当前修为 ${state.xp} · 已达本版最高境界`, "ledger-note"));
     else {
-      cultivation.append(el("h4", "突破至炼气中期"), progressRow("修为", state.xp, xp), progressRow("引气草", herbCount, herbs));
-      if (state.xp >= xp && herbCount >= herbs) cultivation.append(el("p", "可在地图的行动列表中突破。", "ledger-note"));
+      cultivation.append(el("h4", "突破至" + next.name), progressRow("修为", state.xp, next.xp), progressRow("引气草", herbCount, next.herbs));
+      if (state.xp >= next.xp && herbCount >= next.herbs) cultivation.append(el("p", "可在地图的行动列表中突破。", "ledger-note"));
     }
     profile.append(el("p", "学宫档案", "field-label"), portrait, identity, stats, cultivation);
 
@@ -598,7 +628,7 @@
     return column;
   }
   function itemNote(id) {
-    if (id === "herb" && state.trained) return "在青瓦镇可换 2 灵石，也能用来还火箭的人情。";
+    if (id === "herb" && !World.breakthrough(state)) return "在青瓦镇可换 2 灵石，也能用来还火箭的人情。";
     if (id === "witness" || id === "record") {
       const active = state.deed === "pending" || state.deed === "taken";
       const next = active ? "带齐水脚收条和地册拓片，可到学宫处理田契。" : "田契争端已办结。";
@@ -725,7 +755,7 @@
       const li = el("li"); li.append(el("strong", `第 ${line.day} 日`, "log-day"), document.createTextNode(line.text)); list.append(li);
     }
     body.append(el("h3", "人物行踪"), people, el("h3", "游历记录"), list, el("p", saveMessage, "ledger-note"));
-    body.append(ledgerButton("ask-reset", "另开新局"));
+    body.append(ledgerButton("toggle-tips", state.hideTips ? "显示新手提示" : "关闭新手提示"), ledgerButton("ask-reset", "另开新局"));
   }
   function renderLedger() {
     const body = $("ledger-content");
@@ -759,6 +789,12 @@
   $("ledger-content").addEventListener("click", e => {
     const btn = e.target.closest("button"); if (!btn) return;
     if (checkForNewerSave()) { renderLedger(); return; }
+    if (btn.id === "toggle-tips") {
+      state.hideTips = !state.hideTips;
+      save(); renderTips(); renderLedger();
+      $("save-status").textContent = saveMessage;
+      return;
+    }
     if (btn.id === "ask-reset") { openReset("restart"); return; }
     if (btn.dataset.slot) { openLedger("bag", "gear", btn.dataset.slot); return; }
     if (btn.dataset.track || btn.dataset.locate) {

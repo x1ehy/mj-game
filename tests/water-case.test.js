@@ -111,7 +111,7 @@ test("old saves keep every prior resource and receive the full hearing window, i
   old.version = 1; old.equipped = null; delete old.waterCase;
   const before = structuredClone(old);
   W.upgradeSave(old);
-  assert.equal(old.version, 4); assert.equal(Water.valid(old), true);
+  assert.equal(old.version, 5); assert.equal(Water.valid(old), true);
   assert.deepEqual(old.waterCase, { openedDay: before.day, outcome: null });
   for (const key of ["day","deed","place","stones","inventory","debt","cleared","battle"]) assert.deepEqual(old[key], before[key]);
   assert.deepEqual(old.journal.slice(1), before.journal);
