@@ -8,7 +8,7 @@
 
 ## 游戏版本
 
-从 `v0.1.0` 起给试玩版编号，版本号显示在山河图的郡历下方。首次编号收录青瓦见闻、炼气后期、六部位装备与新版试锤台。
+版本号显示在开始菜单和山河图郡历下方。`v0.2.0` 增加了三个本机存档槽、可跳过的图文序章和战前读档。
 
 - 修复问题、小幅调整画面或数值时升补丁号，例如 `v0.1.1`。
 - 新玩法、地图或剧情章节随次版本发布，例如 `v0.2.0`。
@@ -16,13 +16,15 @@
 
 ## 游历操作
 
-双击 [index.html](index.html) 进入青瓦郡。游戏可以离线运行，游历和战斗都在浏览器中结算。浏览器允许本地存储时，每次行动和每个战斗回合都会自动保存。用同一浏览器从同一地址打开即可续玩。「郡中纪事」里可以查看记录或确认重开。
+双击 [index.html](index.html) 打开开始菜单。点「继续游历」回到最近玩的有效存档，或去「选择存档」挑选三个槽位之一。旧版单档沿用原来的存储位置，显示为槽位 1。用同一浏览器从同一地址打开即可续玩。新开游历时可读两幕图文序章，也可跳过，随后从灭家村第 1 日开始。
+
+游戏可以离线运行。地图行动会自动保存。战斗打到一半刷新、回菜单再选档或关闭网页后重新进入，都会回到开战前，战中消耗的丹药随之恢复。胜负结算、首次掉落和主动撤退会保存结果。旧版战中档的丹药按它保留的回合记录补回。
 
 在 PC 山河图上，点左下角的灭霸可查看详细属性。右侧行动随所选地点变化。按 `B` 打开背包，按 `J` 查看纪事，按 `Esc` 合上面板。系统开启「减少动态效果」时，赶路和场景切换会即时完成。
 
 地图的「追踪任务」显示下一步动作、地点和日期。点「定位」可查看路线或找到本地行动，确认动身才会赶路。在郡中纪事可切换要追踪的事，或查看已办结的结果。第五日错过田契交割后仍可申诉。水案会按剩余天数、人物行踪和手中凭据推算还能递交的方案。
 
-在地图或战斗中，点击「清除存档」或按 `Shift + Delete` 可打开警告框。按 `Esc` 或选「保留存档」可取消。选「确认清除」会永久删除此浏览器中的当前游历，回到灭家村第一天。
+在地图或战斗中，点击「菜单」可返回开始画面。点击「清除存档」或按 `Shift + Delete` 可打开当前槽位的警告框，也可从选档列表清除指定档位。按 `Esc` 或选「保留存档」可取消。确认清除后回到选档列表。
 
 点地图上的地名先看行程，再选「动身」才会过一天。「人物」里能查境界、属性、招式和突破条件。「背包」可查看随身物品、比较法器，或在地图上换装。「郡中纪事」里能查熟人今明两日的行踪。赶路、歇脚、吐纳、采草、收谷各耗一日，问话、递状和战斗不推进郡历。
 
@@ -36,6 +38,15 @@
 世界规则在 [world.js](world.js)，水案的日程、提案和裁决在 [water-case.js](water-case.js)，敌方预告与伤害结算在 [encounters.js](encounters.js)，界面和存档在 [game.js](game.js)。在安装了 Node.js 的开发环境运行 `node --test` 可验证现有路线。
 
 新手提示会在开局、领到草鞋和开始切磋时出现，可以在郡中纪事关闭或恢复。带「见闻」的地点行动会随日子和当地事务变化，完成后奖励自动入包。炼气中期后可继续修炼，累积 12 修为和 3 株引气草即可在地图上突破至炼气后期。人物页可查看进度。
+
+<details>
+<summary>序章配图（内置 ImageGen）</summary>
+
+序章第一幕沿用青瓦郡山河图，第二幕使用[村口告示](art/locations/village-notice.webp)。
+
+> A wide landscape 16:9 storybook illustration for an original Chinese cultivation RPG, view from the roadside of a historic village at early morning. In the foreground to the right, an old unpainted wooden notice board anchored on two timber posts and a few layers of rice paper pinned to it, the largest fresh sheet turned slightly toward the viewer, restrained seal-colored blot at a corner. No writing or pseudo-writing of any kind on the paper. To the left a narrow muddy footpath leads toward rice terraces, low gray roof cottages and low meadow walls, broken straw by an irrigation ditch. Distant jade green hills soft with mist. A detailed Chinese antique woodblock print in fine engraved charcoal contours, tight cross-hatching, muted mineral jade and ochre, worn cream paper. Letterbox composition, very clear foreground timber board silhouetted against the pale dawn, simple readable shapes at small scale. Earnest rural atmosphere with a humble slightly crooked notice board. No people, characters, weapons, modern equipment, logos, text or UI.
+
+</details>
 
 ### 青瓦郡的第二件事 · 水表拆了，谁来交水费？
 
@@ -109,7 +120,7 @@
 
 ## 当前可选遭遇
 
-到废渠选「上试锤台单挑托尔」即可切磋。水案落印后，入口叫「陪雷神验闸」。切磋不耗郡历，首次胜利掉落雷纹铁扣，可回地图换装再战。托尔先暗中选招，玩家再选招。双方按招式优先度出手，同档比较身法，同速随机。先手打倒对方即可结束本回合。刷新会保留敌方选招。
+到废渠选「上试锤台单挑托尔」即可切磋。水案落印后，入口叫「陪雷神验闸」。切磋不耗郡历，首次胜利掉落雷纹铁扣，可回地图换装再战。托尔先暗中选招，玩家再选招。双方按招式优先度出手，同档比较身法，同速随机。先手打倒对方即可结束本回合。
 
 托尔花一回合举锤聚雷，下一回合必须落锤，落锤优先度为 −1。响指可抢先打断，引水诀可一边攻击一边打断，架盖接住重击后可以反震。普通锤招和换气在出手时揭晓。空手或佩戴分水令时，沉肩还手能减轻近身锤招并回击。
 
