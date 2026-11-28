@@ -40,6 +40,8 @@ const Encounters = (() => {
   const brace = { name: "架盖", desc: "架住重击，接住后的下一回合可以反震。" };
   const counter = { name: "反震" };
   const stance = { name: "沉肩还手", desc: "架住近身锤招，按自身术法威力减伤，并回敬一次普攻。" };
+  const pill = { name: "回气丸", recovery: 1 };
+  const gear = { lid: {}, seal: {}, shoes: { speed: 120 }, jacket: { defense: 600 }, buckle: { attack: 700 } };
   const duelMoves = {
     jab: { title: "短柄试探", power: 0, physical: true, priority: 0 },
     sweep,
@@ -47,7 +49,7 @@ const Encounters = (() => {
     slam: { title: "蓄雷重锤", power: 4000, charged: true, heavy: true, priority: -1 },
     recover: { title: "收锤换气", exposed: true, priority: 0 },
   };
-  const priorities = { hit: 0, snap: 1, tide: 0, brace: 2, counter: 0, stance: 2 };
+  const priorities = { hit: 0, snap: 1, tide: 0, brace: 2, counter: 0, stance: 2, pill: 0 };
 
   // Commit a move before the player chooses. Reloading also restores the random stream.
   function roll(plan) {
@@ -75,7 +77,12 @@ const Encounters = (() => {
     early: { maxHealth: 10_000, maxSpirit: 2, attack: 3000, defense: 1200, speed: 200, technique: 2000 },
     middle: { maxHealth: 24_000, maxSpirit: 3, attack: 6000, defense: 2400, speed: 400, technique: 4000 },
   };
-  function attributes(world) { return world.trained ? realms.middle : realms.early; }
+  function attributes(world, equipped = world.equipped) {
+    const base = world.trained ? realms.middle : realms.early;
+    const stats = { ...base };
+    for (const [stat, bonus] of Object.entries(gear[equipped] || {})) stats[stat] += bonus;
+    return stats;
+  }
   function damage(attack, power, defense) {
     return Math.max(Math.ceil(attack * .05), attack + power - defense);
   }
@@ -117,7 +124,7 @@ const Encounters = (() => {
       const amount = warning ? damage(foes[battle.id].attack, move.power, attributes(world).defense) : 0;
       return { label: "敌方预告", title: move.title, hint: (warning ? `命中伤害 ${amount}。` : "") + move.hint, warning };
     }
-    if (move.charged) return { label: "蓄力已成", title: "雷光沿锤柄落下", hint: "托尔上回合已举锤聚雷。落锤优先度 −1，此时可以抢攻、打断或接锤。", warning: true };
+    if (move.charged) return { label: "蓄力已成", title: "雷光沿锤柄落下", hint: "托尔上回合已举锤聚雷。落锤优先度 −1，此时可以抢攻、打断或接锤。", warning: true, charging: true };
     return { label: "单打选招", title: "托尔已定招", hint: "先比招式优先度，同档由身法高的一方先动。", warning: false };
   }
   function commands(battle, world) {
@@ -138,6 +145,12 @@ const Encounters = (() => {
       options.push({ id: "brace", ...brace });
       if (battle.counterReady) options.push({ id: "counter", name: counter.name, desc: `仅本回合可用，伤害 ${damage(hero.attack, 2 * hero.technique, foe.defense)}。` });
     }
+    if (world.inventory?.pill > 0) options.push({
+      id: "pill", name: `服${pill.name}`,
+      desc: battle.spirit === battle.maxSpirit ? `灵力已满。剩余 ${world.inventory.pill} 枚。`
+        : `恢复 ${pill.recovery} 点灵力，占用本回合。剩余 ${world.inventory.pill} 枚。`,
+      disabled: battle.spirit >= battle.maxSpirit,
+    });
     if (battle.duel) for (const option of options) option.priority = priorities[option.id];
     return options;
   }
@@ -147,7 +160,7 @@ const Encounters = (() => {
     if (hero.speed !== foe.speed) return { playerFirst: hero.speed > foe.speed, reason: "同优先度下身法较高" };
     return { playerFirst: roll(plan) < .5, reason: "同速争先" };
   }
-  function turn(battle, world, id) {
+  function turn(battle, world, id, motions) {
     const command = commands(battle, world).find(option => option.id === id && !option.disabled);
     if (!command) return false;
     const move = intent(battle), foe = foes[battle.id], hero = attributes(world);
@@ -161,46 +174,57 @@ const Encounters = (() => {
     battle.sweepNext = !battle.duel && interrupted && !!move.charged;
     battle.effect = move.exposed ? "cool" : "review";
 
-    function strike(name, power, opening = 0) {
+    function show(side, cue, text, impact) {
+      lines.push(text);
+      motions?.push({ side, cue, text, impact });
+    }
+    function strike(name, power, opening = 0, cue = id) {
       const amount = Math.min(battle.armor, damage(hero.attack, power, foe.defense) + opening);
       battle.armor -= amount;
-      lines.push(`灭霸使出${name}，${opening ? "抓到破绽，" : ""}打掉 ${amount} 点${battle.id === "thor" ? "架势" : "外壳"}。`);
+      const text = `灭霸使出${name}，${opening ? "抓到破绽，" : ""}打掉 ${amount} 点${battle.id === "thor" ? "架势" : "外壳"}。`;
+      show("hero", cue, text, { stat: "armor", value: battle.armor, amount });
     }
     function playerAction() {
       switch (id) {
         case "hit": strike(command.name, 0, move.exposed ? hero.technique : 0); break;
         case "counter": strike(counter.name, 2 * hero.technique); break;
         case "tide": battle.spirit -= tide.cost; strike(tide.name, hero.technique); break;
-        case "brace": lines.push("灭霸架起炉盖。"); break;
-        case "stance": lines.push("灭霸沉肩，等锤柄靠近。"); break;
+        case "pill":
+          world.inventory.pill--;
+          battle.spirit += pill.recovery;
+          show("hero", "pill", `灭霸服下${pill.name}，灵力 +${pill.recovery}。`);
+          break;
+        case "brace": show("hero", "guard", "灭霸架起炉盖。"); break;
+        case "stance": show("hero", "guard", "灭霸沉肩，等锤柄靠近。"); break;
         case "snap":
           battle.snapReadyAt = battle.round + snap.cooldown + 1;
-          lines.push(interrupted ? "灭霸打了个响指，来招当场卡住。" : "灭霸打了个响指，山谷回了一声。");
+          show("hero", "snap", interrupted ? "灭霸打了个响指，来招当场卡住。" : "灭霸打了个响指，山谷回了一声。");
           break;
       }
     }
     function foeAction() {
       if (interrupted) {
         battle.effect = "interrupt";
-        lines.push(`${move.title}被打断。`);
+        show("foe", "interrupted", `${move.title}被打断。`);
       } else if (blocked) {
         battle.counterReady = true;
-        lines.push(`${move.title}撞上炉盖。下一回合可反震。`);
+        show("foe", "blocked", `${move.title}撞上炉盖。下一回合可反震。`);
       } else if (move.power !== undefined) {
         const incoming = damage(foe.attack, move.power, hero.defense);
         const guard = parried ? hero.technique : 0;
         const absorbed = battle.shield ? Math.min(shieldReduction(battle.maxHealth), incoming) : 0;
-        if (battle.shield) lines.push(`裂纹炉盖挡下 ${absorbed} 点伤害。`);
+        const shieldText = battle.shield ? `裂纹炉盖挡下 ${absorbed} 点伤害。` : "";
         battle.shield = false;
         const amount = Math.min(battle.health, Math.max(0, incoming - guard - absorbed));
         battle.health -= amount;
         if (amount) battle.effect = "penalty";
         const resisted = Math.max(0, foe.attack + move.power - incoming);
-        lines.push(`${foe.title}使出${move.title}，防御抵去 ${resisted} 点${parried ? `，沉肩再挡 ${Math.min(guard, incoming)} 点` : ""}，体力 −${amount}。`);
-        if (parried && battle.health) strike("沉肩还手", 0);
+        const text = `${shieldText}${foe.title}使出${move.title}，防御抵去 ${resisted} 点${parried ? `，沉肩再挡 ${Math.min(guard, incoming)} 点` : ""}，体力 −${amount}。`;
+        show("foe", move.charged ? "thunder" : "attack", text, { stat: "health", value: battle.health, amount });
+        if (parried && battle.health) strike("沉肩还手", 0, 0, "counter");
       } else if (battle.duel?.move === "gather") {
-        lines.push("托尔举锤聚雷，锤头亮了起来。下回合落锤。");
-      } else lines.push(`${foe.title}忙着${move.title}。`);
+        show("foe", "charge", "托尔举锤聚雷，锤头亮了起来。下回合落锤。");
+      } else show("foe", move.exposed ? "cool" : "review", `${foe.title}忙着${move.title}。`);
     }
     if (order.playerFirst) {
       playerAction();
@@ -222,7 +246,7 @@ const Encounters = (() => {
     }
     return true;
   }
-  return { foes, snap, stance, attributes, artifactEffects, validPlan, start, intent, forecast, commands, turn };
+  return { foes, snap, stance, gear, pill, attributes, artifactEffects, validPlan, start, intent, forecast, commands, turn };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = Encounters;

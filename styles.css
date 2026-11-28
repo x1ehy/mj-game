@@ -86,6 +86,7 @@ h1 {
 .vital-value strong { color: white; font-size: 1.04rem; }
 .meter { height: .42rem; background: #4c584d; }
 .meter .filled { display: block; height: 100%; }
+[data-playing] .meter .filled { transition: width 185ms ease-out; }
 .health-meter .filled { background: #91d2a8; }
 .armor-meter .filled { background: #f1ad79; }
 .arena-art {
@@ -124,7 +125,7 @@ h1 {
   pointer-events: none;
 }
 
-.arena-art:is([data-effect="penalty"], [data-effect="interrupt"]) .furnace-effect {
+.arena-art:is([data-foe="furnace"], [data-foe="sluice"]):is([data-gesture="attack"], [data-gesture="interrupted"]) .furnace-effect {
   width: 1.3rem;
   height: 2rem;
   border: 2px solid var(--panel);
@@ -132,11 +133,11 @@ h1 {
   animation: fly-paper 340ms ease-out both;
 }
 
-.arena-art[data-effect="interrupt"] .furnace-effect {
+.arena-art[data-gesture="interrupted"] .furnace-effect {
   animation-name: stop-paper;
 }
 
-.arena-art[data-effect="review"] .furnace-effect {
+.arena-art[data-foe="furnace"][data-gesture="review"] .furnace-effect {
   top: 50%;
   width: 2.1rem;
   aspect-ratio: 1;
@@ -145,7 +146,7 @@ h1 {
   animation: check-paper 290ms ease-out both;
 }
 
-.arena-art[data-effect="cool"] .furnace-effect {
+.arena-art[data-foe="furnace"][data-gesture="cool"] .furnace-effect {
   top: 32%;
   left: 73%;
   width: 2rem;
@@ -155,9 +156,75 @@ h1 {
   animation: release-steam 380ms ease-out both;
 }
 
-.arena-art[data-effect="victory"] .furnace {
-  animation: rattle 340ms ease-out;
+.arena-art[data-outcome="victory"] .furnace {
   filter: grayscale(.46) drop-shadow(0 .4rem .35rem #171915bb);
+}
+.hammer-light, .battle-impact { position: absolute; pointer-events: none; z-index: 3; }
+.hammer-light {
+  left: 74%;
+  top: 12%;
+  width: clamp(2.5rem, 9vw, 5rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #e6ffff 0, #abe7eb 12%, #90dfea90 31%, transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+.arena-art[data-charging] .hammer-light { opacity: .9; }
+.arena-art[data-gesture="thunder"] .hammer-light { animation: hammer-flash 300ms ease-out both; }
+.arena-art[data-gesture="guard"]::after,
+.arena-art[data-foe="thor"][data-gesture="attack"]::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  width: clamp(3.5rem, 13vw, 8rem);
+  aspect-ratio: 1.55;
+  border-radius: 50%;
+}
+.arena-art[data-gesture="guard"]::after {
+  top: 46%;
+  left: 25%;
+  border: 3px double #cbe7e3;
+  box-shadow: inset 0 0 .95rem #bedee990;
+  animation: guard-rise 320ms ease-out both;
+}
+.arena-art[data-foe="thor"][data-gesture="attack"]::after {
+  top: 42%;
+  left: 66%;
+  border-block-start: .35rem solid #f5deb2;
+  animation: hammer-sweep 250ms ease-out both;
+}
+@keyframes guard-rise {
+  from { opacity: 0; transform: scale(.75); }
+  35% { opacity: 1; }
+  to { opacity: .2; transform: scale(1.14); }
+}
+@keyframes hammer-sweep {
+  from { opacity: 0; transform: rotate(24deg) translateX(15%); }
+  32% { opacity: .95; }
+  to { opacity: 0; transform: rotate(-26deg) translateX(-85%); }
+}
+.battle-impact {
+  top: 23%;
+  left: 26%;
+  font: 900 clamp(1.35rem, 4vw, 2.75rem)/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: #ffedbf;
+  text-shadow: 0 2px #45251e, 1px 0 #45251e, -1px 0 #45251e, 0 -1px #45251e;
+}
+.arena-art[data-impact="armor"] .battle-impact { left: 77%; }
+.arena-art[data-impact="blocked"] .battle-impact { color: #e0f4ff; }
+.arena-art[data-impact] .battle-impact { animation: damage-rise 210ms ease-out both; }
+@keyframes damage-rise {
+  from { transform: translate(-50%, 14%); opacity: .2; }
+  24% { opacity: 1; }
+  to { transform: translate(-50%, -28%); opacity: .85; }
+}
+@keyframes hammer-flash {
+  from { transform: scale(1.4); opacity: 1; }
+  to { transform: translate(-7vw, 40%) scale(.4); opacity: 0; }
 }
 
 .dispatch { padding: .8rem clamp(.75rem, 2vw, 1.4rem) 1rem; }
@@ -173,6 +240,10 @@ h1 {
 #announcement-description, #duel-attributes { color: var(--muted); font-size: .86rem; }
 .command-heading { margin: .75rem 0 .4rem; }
 .command-heading p { margin-inline-start: auto; }
+#skip-battle { padding: 0 .3rem; font-size: .84rem; }
+[data-playing] .command[aria-disabled="true"] { cursor: wait; }
+[data-playing] .command[aria-disabled="true"]:hover:not(:disabled) { background: var(--panel); }
+[data-playing] .command-primary[aria-disabled="true"]:hover:not(:disabled) { background: var(--arena); }
 #round-number { font-size: .82rem; color: var(--muted); }
 .command-heading h2, .history h2 { font: 700 1.04rem var(--font-title); }
 .commands { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
@@ -290,12 +361,6 @@ h1 {
 @keyframes release-steam {
   from { opacity: .85; transform: scale(.46); }
   to { opacity: 0; transform: translateY(-1.65rem) scale(1.3); }
-}
-
-@keyframes rattle {
-  25% { transform: translateX(-.4rem) rotate(-3deg); }
-  55% { transform: translateX(.38rem) rotate(2deg); }
-  to { transform: none; }
 }
 
 @keyframes flinch {

@@ -69,7 +69,7 @@ button:hover:not(:disabled) { text-decoration-color: currentColor; }
 .masthead button { padding: 0; color: var(--bronze); }
 .arena-art[data-foe="sluice"] { --scene: url("art/locations/sluice.webp"); background-position: right 45%; }
 .arena-art[data-foe="thor"] { --scene: url("art/locations/thor-inspection.webp"); background-position: right 6%; }
-.arena-art[data-foe="sluice"]:is([data-effect="penalty"],[data-effect="interrupt"]) .furnace-effect { width: 1.35rem; height: 1.35rem; border: 4px double #b78a48; border-radius: 50%; background: #4f432d; }
+.arena-art[data-foe="sluice"]:is([data-gesture="attack"],[data-gesture="interrupted"]) .furnace-effect { width: 1.35rem; height: 1.35rem; border: 4px double #b78a48; border-radius: 50%; background: #4f432d; }
 dialog { border: 1px solid var(--control-line); border-top: 4px solid var(--bronze); padding: 0 1.35rem 1.35rem;
   background: var(--panel); color: var(--ink); width: min(36rem,calc(100% - 2rem)); max-height: 82dvh; overflow: auto; }
 dialog::backdrop { background: rgb(23 31 25 / .6); }
@@ -169,6 +169,12 @@ dialog::backdrop { background: rgb(23 31 25 / .6); }
 .gear-column { min-width: 0; padding: .7rem; }
 .gear-column + .gear-column { border-inline-start: 1px solid var(--line); background: var(--bronze-pale); }
 .gear-name { display: block; margin: .17rem 0 .25rem; }
+.gear-stats { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .3rem .4rem; margin-block: .65rem .3rem; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.gear-stats dt { color: var(--muted); }
+.gear-stats dd { text-align: end; overflow-wrap: anywhere; }
+.gear-stats small { display: inline-block; margin-inline-start: .25em; font: inherit; }
+.gear-increase { color: var(--bronze); }
+.gear-decrease { color: var(--seal); }
 .gear-column .technique-list li { padding-block: .38rem; }
 .gear-column .technique-list strong { display: block; font-size: .86rem; }
 .gear-column .technique-list small { font-size: .81rem; }
@@ -203,6 +209,12 @@ dialog::backdrop { background: rgb(23 31 25 / .6); }
   .pack-detail { border-inline-start: 0; border-top: 1px solid var(--line); padding: .75rem 0 0; }
 }
 @media (max-width: 28rem) {
+  .pack-categories { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .25rem; }
+  .pack-category { padding-inline: .1rem; font-size: .85rem; }
+  .gear-preview:has(.gear-column + .gear-column) .gear-name { min-height: 3.1em; }
+  .gear-preview:has(.gear-column + .gear-column) .gear-stats { line-height: 1.3; }
+  .gear-preview:has(.gear-column + .gear-column) .gear-stats dd { min-height: 2.6em; }
+  .gear-preview:has(.gear-column + .gear-column) .gear-stats small { display: block; }
   .water-notice { grid-template-columns: 1fr; gap: 0; }
   .water-notice img { height: 6.5rem; }
   .water-notice > div { padding: .7rem .85rem; }

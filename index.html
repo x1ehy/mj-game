@@ -8,9 +8,11 @@
   <title>青瓦郡 · 爱慕杰修仙志</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="atlas.css">
-  <link rel="stylesheet" href="character.css?v=campus">
+  <link rel="stylesheet" href="character.css?v=battle-motion">
+  <link rel="stylesheet" href="dialogue.css">
   <script src="encounters.js" defer></script>
   <script src="water-case.js" defer></script>
+  <script src="first-rain.js" defer></script>
   <script src="world.js" defer></script>
   <script src="game.js" defer></script>
 </head>
@@ -43,7 +45,7 @@
           </div>
           <figcaption>
             <span class="map-traveler"><span class="hero-avatar" data-hero-art aria-hidden="true"></span><span id="map-position">灭霸在灭家村</span></span>
-            <span>点地名探路 · 赶路耗一日</span>
+            <span id="travel-hint">点地名探路 · 赶路耗一日</span>
           </figcaption>
         </figure>
         <article id="water-notice" class="water-notice" aria-labelledby="water-title" hidden>
@@ -54,6 +56,11 @@
             <p id="water-copy"></p>
           </div>
         </article>
+        <section class="deed-sheet" id="rain-notice" aria-labelledby="rain-title" hidden>
+          <div class="letter-title"><span class="field-label">汛情</span><span id="rain-status"></span></div>
+          <h2 id="rain-title">青瓦郡的第一场大雨</h2>
+          <p id="rain-copy"></p>
+        </section>
         <section class="deed-sheet" aria-labelledby="deed-title">
           <div class="letter-title"><span class="field-label">郡中告示</span><span id="deed-state"></span></div>
           <h2 id="deed-title">第五天，谁家的田？</h2>
@@ -86,17 +93,17 @@
       <p class="premise" id="case-premise"></p>
     </header>
 
-    <div class="battle">
+    <div class="battle" id="battle">
       <div class="vitals" role="group" aria-label="对战双方">
         <section class="vital ally" aria-labelledby="player-name">
           <div class="vital-heading"><h2 id="player-name">灭霸</h2><span id="battle-realm"></span></div>
           <p class="vital-value">体力 <strong id="health-value"></strong> / <span id="health-max"></span></p>
-          <div class="meter health-meter" id="health-meter" aria-hidden="true"></div>
+          <div class="meter health-meter" id="health-meter" aria-hidden="true"><span class="filled"></span></div>
         </section>
         <section class="vital enemy" aria-labelledby="enemy-name">
           <div class="vital-heading"><h2 id="enemy-name"></h2></div>
           <p class="vital-value"><span id="enemy-meter-label">架势</span> <strong id="armor-value"></strong> / <span id="armor-max"></span></p>
-          <div class="meter armor-meter" id="armor-meter" aria-hidden="true"></div>
+          <div class="meter armor-meter" id="armor-meter" aria-hidden="true"><span class="filled"></span></div>
         </section>
       </div>
 
@@ -104,6 +111,8 @@
         <div class="player-fighter"><div class="hero-stage" data-hero-art aria-hidden="true"><span class="snap-mark">啪</span></div></div>
         <img class="furnace" id="furnace-art" loading="lazy" src="art/concepts/attendance-furnace.png" width="1254" height="1254" alt="">
         <span class="furnace-effect" aria-hidden="true"></span>
+        <span class="hammer-light" aria-hidden="true"></span>
+        <span class="battle-impact" id="battle-impact" aria-hidden="true"></span>
       </div>
 
       <section class="dispatch" aria-label="选择战斗指令">
@@ -111,7 +120,7 @@
           <div class="announcement-heading"><span class="announcement-label" id="announcement-label"></span><h2 id="announcement-title"></h2></div>
           <p id="announcement-description"></p>
         </div>
-        <div class="command-heading"><h2>招式</h2><span id="round-number"></span><p>灵力 <strong id="spirit-value"></strong> / <span id="spirit-max"></span></p></div>
+        <div class="command-heading"><h2>指令</h2><span id="round-number"></span><p>灵力 <strong id="spirit-value"></strong> / <span id="spirit-max"></span></p><button type="button" id="skip-battle" class="text-button" hidden>跳过动画</button></div>
         <div class="commands" id="commands"></div>
         <p id="battle-reply" class="battle-reply"></p>
         <p id="duel-result" hidden></p>
@@ -128,6 +137,33 @@
     <header class="ledger-head"><h2 id="ledger-title" tabindex="-1"></h2><button id="close-ledger" type="button">合上</button></header>
     <div id="ledger-content"></div>
     <p id="ledger-feedback" class="screen-reader" role="status"></p>
+  </dialog>
+  <dialog id="story-dialog" aria-labelledby="story-title">
+    <header class="story-head">
+      <h2 id="story-title" tabindex="-1">祠堂檐下</h2>
+      <button type="button" id="story-close">合上</button>
+    </header>
+    <div class="story-cast" aria-hidden="true">
+      <figure class="story-portrait" id="story-hero">
+        <img id="story-hero-photo" alt="">
+        <figcaption>灭霸</figcaption>
+      </figure>
+      <figure class="story-portrait" id="story-partner">
+        <img id="story-partner-photo" alt="">
+        <figcaption id="story-partner-name"></figcaption>
+      </figure>
+    </div>
+    <div class="story-paper">
+      <div class="story-line" aria-live="polite" aria-atomic="true">
+        <strong id="story-speaker"></strong>
+        <p id="story-text"></p>
+      </div>
+      <div id="story-choices" class="story-choices" aria-label="决定先去哪里" hidden></div>
+      <footer class="story-controls">
+        <button type="button" id="story-prev">上一句</button>
+        <button type="button" id="story-next">继续 <span aria-hidden="true">→</span></button>
+      </footer>
+    </div>
   </dialog>
   <dialog id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-warning">
     <h2 id="reset-title">清除当前存档？</h2>

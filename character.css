@@ -36,8 +36,8 @@
   padding: .05em .22em;
   pointer-events: none;
 }
-.arena-art[data-effect="penalty"] .hero-portrait { animation: flinch 340ms ease-out; }
-.arena-art[data-gesture="snap"] .snap-mark { animation: snap-print 560ms ease-out; }
+.arena-art[data-impact="health"] .hero-portrait { animation: flinch 215ms ease-out; }
+.arena-art[data-gesture="snap"] .snap-mark { animation: snap-print 320ms ease-out; }
 .arena-art:is([data-gesture="hit"], [data-gesture="counter"], [data-gesture="tide"]) .player-fighter {
   transform-origin: center bottom;
   animation: shoulder-strike 300ms ease-out;

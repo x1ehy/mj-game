@@ -1,7 +1,7 @@
 "use strict";
 
 // Classic scripts also work when the player opens index.html directly from disk.
-const World = ((combat, water) => {
+const World = ((combat, water, rain) => {
   const places = {
     village: { name: "灭家村", x: 22, y: 72, tag: "灵田 · 渡口", desc: "灭建国种了三十年的田。村口石碑新刷了一层白漆，把田主那一栏也刷白了。" },
     town: { name: "青瓦镇", x: 27, y: 36, tag: "集市 · 茶棚", desc: "桥头卖药，桥尾卖药方。火箭在中间支了张桌子，专收两头的介绍费。" },
@@ -13,6 +13,10 @@ const World = ((combat, water) => {
     rocket: { name: "火箭浣熊", job: "掮客", route: ["canal", "town", "town", "village"] },
     stark: { name: "钢铁侠", job: "学宫匠师", route: ["academy", "canal", "academy", "town"] },
   };
+  const jacketPrice = 5;
+  const pillPrice = 2;
+  const slipValue = 4;
+  const slipPills = 2;
   const items = {
     ...water.items,
     witness: ["水脚收条", "灭建国留着的旧收条，背面有当年的田号。"],
@@ -20,6 +24,11 @@ const World = ((combat, water) => {
     herb: ["引气草", "突破需 1 株。在青瓦镇可换 2 灵石，也能用来还火箭的人情。"],
     seal: ["分水令", "引水诀耗 1 灵力，攻击并打断符咒或蓄雷。托尔的贴地横锤仍会落下。"],
     lid: ["裂纹炉盖", "每场首次受击最多抵消体力上限的四成。可主动架盖挡重击，下一回合反震。"],
+    shoes: ["踩泥草鞋", "灭建国用旧稻秆编的。帮他修完灭家村的田埂就能拿到。"],
+    jacket: ["补过三回的校服", `里衬缝了三层，肘上还印着上一任主人的班号。火箭在青瓦镇摆摊时卖 ${jacketPrice} 灵石。`],
+    buckle: ["雷纹铁扣", "托尔拿锤子把验收章压在废铁上。首次赢下废渠的切磋可得。"],
+    returnSlip: ["丹房退货单", `可在青瓦镇找火箭换 ${slipValue} 灵石，或在学宫丹房库房换 ${slipPills} 枚${combat.pill.name}。兑过即收回。`],
+    pill: [combat.pill.name, `战斗中占用一回合，恢复 ${combat.pill.recovery} 点灵力。青瓦镇药摊售价 ${pillPrice} 灵石。`],
   };
   const deeds = {
     pending: ["待交割", "仙盟把灭建国的灵田登记成了无主地，第五天由买家接手。"],
@@ -73,12 +82,12 @@ const World = ((combat, water) => {
     water.nextDay(s, log);
   }
   function locationOf(id, day, s) {
-    const assignment = water.location(s?.waterCase, id, day);
+    const assignment = rain.location(s, id) || water.location(s?.waterCase, id, day);
     if (assignment) return assignment;
     const route = people[id].route;
     return route[(day - 1) % route.length];
   }
-  function describe(s, place) {
+  function localLore(s, place) {
     const ruling = s.waterCase?.outcome;
     if (place === "village") {
       const field = s.deed === "pending" ? places.village.desc : deeds[s.deed][1];
@@ -93,12 +102,19 @@ const World = ((combat, water) => {
     if (place === "academy" && s.cleared.furnace) return "西厢照常收状子。东厢的丹炉空着炉口，旁边贴了张「今日免点名」。";
     return places[place].desc;
   }
+  function describe(s, place) {
+    const scene = rain.scene(s, place);
+    return scene || localLore(s, place);
+  }
   function realm(s) { return s.trained ? "炼气中期" : "炼气初期"; }
   function gain(s, id, count = 1) { s.inventory[id] = (s.inventory[id] || 0) + count; }
   function relation(s, id) {
     if (id === "elder") return s.deed === "owned" ? "愿替你引荐" : s.deed === "leased" ? "与你合耕" : "同乡";
     if (id === "rocket" && s.waterCase?.outcome === "franchise") return "包闸合约的保人";
     if (id === "rocket") return s.debt ? "欠他一份人情" : s.broker ? "生意相识" : "尚无往来";
+    const ties = { ferry: "与你一起开过旁闸", granary: "与你一起保过谷种" };
+    const shared = ties[rain.stage(s)];
+    if (shared) return (s.lesson ? "有授业之谊，" : "") + shared;
     return s.lesson ? "有授业之谊" : s.introduced ? "持引荐可请教" : "点头之交";
   }
   function openDeed(s) { return s.deed === "pending" || s.deed === "taken"; }
@@ -113,6 +129,12 @@ const World = ((combat, water) => {
     else add("talkElder", "和灭建国聊聊", "打听灵田和沿渠的收成。", () => log(s,
       s.waterCase?.outcome === "metered" ? "灭建国翻翻账本。「这季多收的那枚灵石，刚好够给火箭买票。他还问我要不要办年卡。」" :
       s.cleared.sluice ? "灭建国挽起裤腿。「水回来了，等秧苗站稳，该请你吃新米。」" : "灭建国指指干裂的田。「地契管地，水表管水。这两位神仙互相不认。」"));
+    if (s.place === "village" && !s.inventory.shoes) {
+      add("mendBank", "帮灭建国修田埂", "耗时 1 日，得踩泥草鞋，装备后身法 +120。", () => {
+        gain(s, "shoes"); passDay(s);
+        log(s, "灭霸用手把最后一道豁口抹平。灭建国从锄把上解下两只草鞋。「你穿这个走。先别试响指，鞋带是打活扣的。」");
+      });
+    }
   }
   function rocketOrders(s, add) {
     const unsettled = openDeed(s);
@@ -135,13 +157,35 @@ const World = ((combat, water) => {
       s.waterCase?.outcome === "metered" ? "火箭弹弹票根。「多收的那一枚，是水闸挣的。水闸正好归我。」" :
       s.waterCase?.outcome === "franchise" ? "火箭亮出两张免票。「我们说好的是灭家免。你可别领全村来认亲。」" :
       s.cleared.sluice ? "火箭摊开账本。「水费没了，灭家收一茬谷子能多落一枚灵石。我就不收咨询费了。」" : "火箭压低声音。「废渠的水表比我还黑。你让它消停，灭家的田就能多收一份。」"));
+    if (s.place !== "town") return;
+    if (!s.inventory.jacket) add("buyJacket", "向火箭买旧校服", `付 ${jacketPrice} 灵石，得补过三回的校服，装备后防御 +600。`, () => {
+      s.stones -= jacketPrice; gain(s, "jacket");
+      log(s, "火箭把校服往你肩上一披。「三层补丁，洗一遍还能省三件衣服的钱。」");
+    }, s.stones < jacketPrice);
+    if (s.inventory.returnSlip) add("cashSlip", "找火箭兑退货单", `交回退货单，换 ${slipValue} 灵石。也可去学宫库房换药。`, () => {
+      gain(s, "returnSlip", -1); s.stones += slipValue;
+      log(s, `火箭盯着单子看了半天。「炉盖都被你拿走了，你退的是哪一部分？」他划掉货号，给了你 ${slipValue} 灵石。`);
+    });
   }
   function starkOrders(s, add) {
     if (s.introduced && !s.lesson) add("lesson", "请钢铁侠指点", "用灭建国的引荐换一次行气指点。", () => {
       s.lesson = true; s.xp += 2; log(s, "钢铁侠把护腕借你半刻，震得你连打三个嗝。经脉倒真通了，修为增加 2。");
     });
-    else add("talkStark", "和钢铁侠聊聊", "问问匠师这阵子都在修什么。", () => log(s,
+    if (s.firstRain === "ferry" || s.firstRain === "granary") {
+      add("talkStark", "和钢铁侠叙旧", "他把工单折起来，给你腾出半条长凳。", () => log(s, s.firstRain === "ferry"
+        ? "钢铁侠伸出右手，掌心还留着绳印。「那天要是按我的图开闸，田准得淹。以后画水道，青石那头给你留一支笔。」"
+        : "钢铁侠从衣袋摸出几粒稻谷，壳都裂开了。「我留了三粒试种。早上出了两个芽，另一个大概跟我一样，起得晚。」"));
+    } else if (s.firstRain && rain.location(s, "stark") === s.place) {
+      add("talkStark", "问钢铁侠旧渠的来历", "他的旧图上还有半枚学宫的骑缝印。", () => log(s,
+        "钢铁侠把湿图揭开。图背面还有条细细的蓝线，一直通到郡界外。「那年仙盟说上游要蓄灵，叫我封了旁闸。我回来交差的时候，连画图的人都调走了。」他指指印上缺的半边。「另一半，在上游。」"));
+    } else if (!s.introduced || s.lesson) add("talkStark", "和钢铁侠聊聊", "问问匠师这阵子都在修什么。", () => log(s,
       s.cleared.furnace ? "钢铁侠听说炉盖掉了，立刻在修理单上勾了「可拆洗」。" : "钢铁侠翻着工单。「废渠水表归学宫，学宫丹炉归后勤，后勤归正在维修的水表。」"));
+    if (s.cleared.furnace && !Object.hasOwn(s.inventory, "returnSlip")) {
+      add("getReturnSlip", "请钢铁侠开丹房退货单", "可在青瓦镇兑灵石，或去学宫库房换回气丸。", () => {
+        gain(s, "returnSlip");
+        log(s, "钢铁侠看了一眼裂纹炉盖，在单上写下「退炉身一件」。炉盖仍然归你。");
+      });
+    }
   }
   function academyOrders(s, add) {
     if (!s.inventory.record) add("archive", "翻查学宫旧档", "在西厢取一张底册拓片。", () => {
@@ -153,6 +197,10 @@ const World = ((combat, water) => {
         s.stones -= fee; s.deed = "owned"; log(s, "两份田号对上了。学宫撤销登记，灭建国重获田契。再见到他，可以请他引荐故交。");
       }, !s.inventory.witness || !s.inventory.record || s.stones < fee);
     }
+    if (s.inventory.returnSlip) add("tradeSlip", "去库房用退货单换药", `交回退货单，领 ${slipPills} 枚回气丸。也可到青瓦镇找火箭兑灵石。`, () => {
+      gain(s, "returnSlip", -1); gain(s, "pill", slipPills);
+      log(s, `管库的童子把单子钉到墙上，数出 ${slipPills} 枚回气丸。「炉子坏了以后，库房总算有人亲自点数了。」`);
+    });
   }
   function villageOrders(s, add) {
     if (s.deed === "taken") add("rent", "与管事签佃约", "付 4 灵石重新租田，每次收成分买家一枚。", () => {
@@ -180,6 +228,10 @@ const World = ((combat, water) => {
     add("sell", "在药摊卖草", "每株换 2 灵石，当场结清。", () => {
       gain(s, "herb", -1); s.stones += 2; log(s, "草药铺付了 2 灵石，顺手给引气草改名「上品聚灵芽」。");
     }, !s.inventory.herb);
+    add("buyPill", "在药摊买回气丸", `付 ${pillPrice} 灵石买 1 枚，战斗中可恢复 1 点灵力。`, () => {
+      s.stones -= pillPrice; gain(s, "pill");
+      log(s, "药摊递来一枚回气丸，油纸上写着「嚼完再运功」。");
+    }, s.stones < pillPrice);
   }
   function dailyOrders(s, add) {
     if (!s.trained) {
@@ -202,15 +254,17 @@ const World = ((combat, water) => {
     if (s.battle) return [];
     const result = [];
     const add = (id, name, desc, run, disabled = false) => result.push({ id, name, desc, run, disabled });
+    rain.orders(s, add, log, passDay);
     water.orders(s, add, log);
     for (const [id, conversation] of Object.entries(conversations)) {
       if (locationOf(id, s.day, s) === s.place) conversation(s, add);
     }
     localOrders[s.place]?.(s, add);
     const inspection = s.place === "canal" && s.waterCase?.outcome;
+    const thorPrize = s.inventory.buckle ? "" : "首次胜利掉落雷纹铁扣。";
     const foe = inspection ? "thor" : places[s.place].encounter;
-    if (foe && (inspection || !s.cleared[foe])) add("fight", combat.foes[foe].challenge, inspection ? "免费切磋，可重复挑战。开打前可在背包里换法器。" : "指令回合战，可中途撤走。", () => { s.battle = combat.start(foe, s); });
-    if (s.place === "canal" && !inspection) add("spar", "上试锤台单挑托尔", "切磋不耗郡历。双方各选一招，按优先度与身法交手。", () => { s.battle = combat.start("thor", s); });
+    if (foe && (inspection || !s.cleared[foe])) add("fight", combat.foes[foe].challenge, inspection ? "免费切磋，可重复挑战。" + thorPrize : "指令回合战，可中途撤走。", () => { s.battle = combat.start(foe, s); });
+    if (s.place === "canal" && !inspection) add("spar", "上试锤台单挑托尔", "切磋不耗郡历。双方各选一招，按优先度与身法交手。" + thorPrize, () => { s.battle = combat.start("thor", s); });
     dailyOrders(s, add);
     return result;
   }
@@ -222,22 +276,27 @@ const World = ((combat, water) => {
   }
   function travel(s, to) {
     if (s.battle || !Object.hasOwn(places, to) || to === s.place) return false;
-    s.place = to; passDay(s); log(s, `抵达${places[to].name}。`);
+    const crossing = rain.ferry(s, to);
+    s.place = to;
+    if (!crossing) passDay(s);
+    log(s, crossing ? "灭霸扣住滑把，顺着渡索回到灭家村，午饭还热着。" : `抵达${places[to].name}。`);
     return true;
   }
   function equip(s, id) {
-    if (s.battle || !["lid", "seal"].includes(id) || !s.inventory[id]) return false;
+    if (s.battle || !Object.hasOwn(combat.gear, id) || !s.inventory[id]) return false;
     s.equipped = s.equipped === id ? null : id;
     log(s, s.equipped ? `装上${items[id][0]}。` : `收起${items[id][0]}。`);
     return true;
   }
-  function victoryReport(id) {
-    if (id === "thor") return "托尔在验收单上盖了个锤印。回到废渠，可换件法器再来切磋。";
+  function victoryReport(id, firstWin = false) {
+    if (id === "thor") return firstWin
+      ? "托尔把验收章砸在一截废铁上。雷纹铁扣已收入背包，装备后攻击 +700。"
+      : "托尔在验收单上盖了个锤印。回到废渠，可换件装备再来切磋。";
     return id === "sluice"
       ? "功德水表停摆。你拾到分水令，开渠后灵谷增产。学宫送来一张修闸账单，明日到灭家村开听。"
       : "考勤丹炉散了架。裂纹炉盖已收入背包，可装备挡伤。";
   }
-  function fight(s, action) {
+  function fight(s, action, motions) {
     const b = s.battle;
     if (!b) return false;
     if (action === "leave") {
@@ -245,14 +304,18 @@ const World = ((combat, water) => {
       s.battle = null; return true;
     }
     if (action === "retry" && b.outcome === "defeat") { s.battle = combat.start(b.id, s); return true; }
-    if (!combat.turn(b, s, action)) return false;
+    if (!combat.turn(b, s, action, motions)) return false;
     if (b.outcome === "victory") {
       if (b.id !== "thor") {
         s.cleared[b.id] = true;
         gain(s, b.id === "furnace" ? "lid" : "seal");
+      } else if (!s.inventory.buckle) {
+        gain(s, "buckle");
+        b.thorReward = true;
+        b.turns[0].text += "获得雷纹铁扣。";
       }
       if (b.id === "sluice") water.start(s);
-      log(s, victoryReport(b.id));
+      log(s, victoryReport(b.id, b.thorReward));
     }
     if (b.outcome === "defeat") log(s, `灭霸败给${combat.foes[b.id].title}，可以重整旗鼓或回地图。`);
     return true;
@@ -260,6 +323,7 @@ const World = ((combat, water) => {
   return { places, people, items, deeds, boundary, breakthrough, fresh, realm, relation, describe, armorScale, upgradeSave,
     locationOf, orders, act, travel, equip, fight, victoryReport };
 })(typeof module !== "undefined" && module.exports ? require("./encounters.js") : Encounters,
-   typeof module !== "undefined" && module.exports ? require("./water-case.js") : WaterCase);
+   typeof module !== "undefined" && module.exports ? require("./water-case.js") : WaterCase,
+   typeof module !== "undefined" && module.exports ? require("./first-rain.js") : FirstRain);
 
 if (typeof module !== "undefined" && module.exports) module.exports = World;

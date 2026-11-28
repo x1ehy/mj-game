@@ -16,7 +16,7 @@ function inspection(equipped) {
 function play(s, ...ids) {
   for (const id of ids) assert.equal(W.fight(s, id), true, id);
 }
-test("both artifacts win using only visible tells; inspection and practice give no loot or time", () => {
+test("both artifacts win using only visible tells; Thor's first win pays once and spends no time", () => {
   for (const equipped of ["lid", "seal"]) {
     for (const seed of [1, 7, 42, 808, 67304]) {
       const s = inspection(equipped);
@@ -28,9 +28,16 @@ test("both artifacts win using only visible tells; inspection and practice give 
       }
       assert.equal(s.battle.outcome, "victory");
       assert.equal(s.day, 9);
-      assert.deepEqual(s.inventory, { lid: 1, seal: 1 });
+      assert.deepEqual(s.inventory, { lid: 1, seal: 1, buckle: 1 });
+      assert.equal(s.battle.thorReward, true);
+      assert.match(W.victoryReport("thor", s.battle.thorReward), /雷纹铁扣/);
       play(s, "leave");
       assert.ok(W.act(s, "fight"));
+      s.battle.duel.move = "recover";
+      s.battle.armor = 1;
+      play(s, "hit");
+      assert.equal(s.inventory.buckle, 1);
+      assert.equal(s.battle.thorReward, undefined);
     }
   }
   const fresh = W.fresh();
@@ -43,6 +50,51 @@ test("both artifacts win using only visible tells; inspection and practice give 
   assert.deepEqual(fresh.cleared, before.cleared);
   assert.equal(fresh.waterCase, null);
   assert.ok(W.act(fresh, "fight")); assert.equal(fresh.battle.id, "sluice");
+});
+
+test("new equipment applies the same bonuses in previews, initiative and resolved damage", () => {
+  const s = inspection(null);
+  Object.assign(s.inventory, { shoes: 1, jacket: 1, buckle: 1 });
+  assert.equal(C.attributes(s, "shoes").speed, 320);
+  for (const [id, damage, loss, first] of [
+    ["shoes", 2000, 2000, "灭霸"],
+    ["jacket", 2000, 1400, "雷神托尔"],
+    ["buckle", 2700, 2000, "雷神托尔"],
+  ]) {
+    play(s, "leave");
+    assert.equal(W.equip(s, id), true);
+    assert.ok(W.act(s, "fight"));
+    s.battle.duel.move = "jab";
+    assert.equal(W.equip(s, id), false);
+    assert.match(C.commands(s.battle, s)[0].desc, new RegExp(String(damage)));
+    play(s, "hit");
+    assert.equal(s.battle.armor, 16000 - damage);
+    assert.equal(s.battle.health, 10000 - loss);
+    assert.ok(s.battle.turns[0].text.startsWith(first + "先手"));
+  }
+});
+
+test("pills spend one turn and persist only if the action executes", () => {
+  const s = inspection("seal");
+  s.inventory.pill = 1;
+  s.battle.duel.move = "recover";
+  assert.equal(W.fight(s, "pill"), false);
+  play(s, "tide");
+  const revived = JSON.parse(JSON.stringify(s));
+  s.battle.duel.move = "jab"; s.battle.health = 2000;
+  play(s, "pill");
+  assert.equal(s.battle.outcome, "defeat");
+  assert.equal(s.inventory.pill, 1);
+  assert.equal(s.battle.spirit, 1);
+
+  revived.battle.duel.move = "slam";
+  const motions = [];
+  assert.equal(W.fight(revived, "pill", motions), true);
+  assert.equal(revived.inventory.pill, 0);
+  assert.equal(revived.battle.spirit, 2);
+  assert.equal(revived.battle.round, 3);
+  assert.deepEqual(motions.map(step => step.cue), ["pill", "thunder"]);
+  assert.equal(C.commands(revived.battle, revived).some(action => action.id === "pill"), false);
 });
 
 test("ordinary plans share a public forecast and commands; charge occupies a turn and commits the next", () => {
@@ -167,4 +219,24 @@ test("artifacts scale with the wearer's realm in preview and in combat", () => {
   s.battle.duel.move = "slam"; play(s, "brace");
   s.battle.duel.move = "recover"; play(s, "counter");
   assert.equal(s.battle.outcome, "victory");
+});
+
+test("round animation receives actual action order, damage and knockouts without writing to the save", () => {
+  const s = inspection("seal");
+  s.battle.duel.move = "jab";
+  const motions = [];
+  const immediate = structuredClone(s);
+  assert.equal(W.fight(s, "tide", motions), true);
+  play(immediate, "tide");
+  assert.deepEqual(s, immediate);
+  assert.deepEqual(motions.map(({ side, cue, impact }) => [side, cue, impact]), [
+    ["foe", "attack", { stat: "health", value: 8000, amount: 2000 }],
+    ["hero", "tide", { stat: "armor", value: 12000, amount: 4000 }],
+  ]);
+  s.battle.duel.move = "slam";
+  s.battle.armor = 2000;
+  motions.length = 0;
+  assert.equal(W.fight(s, "hit", motions), true);
+  assert.equal(s.battle.outcome, "victory");
+  assert.deepEqual(motions.map(step => step.side), ["hero"]);
 });

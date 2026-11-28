@@ -84,3 +84,39 @@ test("training and gathering reach the next realm and change effective attack st
   assert.equal(s.battle.health, 24000); assert.equal(s.battle.spirit, 3);
   assert.equal(C.intent(s.battle).exposed, true); fight(s, "hit"); assert.equal(s.battle.armor, 5000);
 });
+
+test("market, village and academy supply five items with one-time rewards and exclusive redemption", () => {
+  const s = W.fresh();
+  act(s, "mendBank");
+  assert.equal(s.day, 2);
+  assert.equal(s.inventory.shoes, 1);
+  assert.equal(W.act(s, "mendBank"), false);
+  travel(s, "town");
+  assert.equal(W.act(s, "buyJacket"), false);
+  act(s, "buyPill");
+  assert.equal(s.stones, 1);
+  assert.equal(s.inventory.pill, 1);
+  assert.equal(W.act(s, "buyPill"), false);
+  assert.equal(W.equip(s, "pill"), false);
+  travel(s, "academy");
+  act(s, "fight"); fight(s, "snap", "hit", "hit", "hit", "hit", "hit", "leave");
+  act(s, "wait", "getReturnSlip");
+  const trade = JSON.parse(JSON.stringify(s));
+  act(trade, "tradeSlip");
+  assert.equal(trade.inventory.pill, 3);
+  assert.equal(trade.inventory.returnSlip, 0);
+  assert.equal(W.act(trade, "getReturnSlip"), false);
+  assert.equal(W.act(trade, "tradeSlip"), false);
+  travel(trade, "town");
+  assert.equal(W.act(trade, "cashSlip"), false);
+
+  travel(s, "town");
+  act(s, "cashSlip", "buyJacket");
+  assert.equal(s.inventory.returnSlip, 0);
+  assert.equal(s.stones, 0);
+  assert.equal(s.inventory.jacket, 1);
+  assert.equal(W.act(s, "cashSlip"), false);
+  travel(s, "academy");
+  assert.equal(W.act(s, "getReturnSlip"), false);
+  assert.equal(W.act(s, "tradeSlip"), false);
+});
