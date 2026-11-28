@@ -130,6 +130,21 @@
 | 回气丸 | 青瓦镇药摊每枚 2 灵石。服药占一回合，恢复 1 点灵力，优先度为 0。若先被打倒，药丸留在背包里。 |
 
 <details>
+<summary>试锤台背景和九件装备插图（内置 ImageGen）</summary>
+
+[试锤台空场](art/locations/sluice-trial-ground.webp) 用作托尔战的背景。角色和锤臂沿用旧版 [试锤台插画](art/locations/thor-inspection.webp) 中的画面，通过两层裁切显示。地点侧栏从山河图取景。[装备图集](art/items/equipment-atlas.webp) 按三行三列排布，CSS 显示对应格子。
+
+试锤台背景提示词
+
+> Wide panoramic landscape background for a Chinese cultivation browser game battle at a historic rural sluice and small inspection platform. No characters, people, humanoids, weapons, signs, lettering, writing or UI. Landscape 16:9. Visually consistent with a Chinese antique woodblock print in charcoal contour and fine hatch, warm toned ivory paper, muted blue jade river, warm ochre stone, red muted clouds under evening light. Broad continuous level worn stone slab foreground all across the bottom 42 percent where the two characters will later stand, simple and quiet. Across mid distance center: stone embankment with a compact wooden sluice and river spilling through it. A distant stone arched bridge, village rooftops and layered mountains under a pale sky. Keep both left and right thirds visually uncluttered for character silhouettes. Crisp etched antique architecture, weathered flagstone lines, restrained color. The occupied stage area should be even, no large objects in front and no figure silhouettes in the background.
+
+装备图集提示词
+
+> Create ONE game inventory texture atlas for an original Chinese cultivation web RPG. Square image, exact regular 3-by-3 invisible grid, nine unique equipment items, each centered exactly in its own square cell, generous blank margins around each object, nothing crossing into the next cell. Entire image on a continuous flat pale warm ivory paper (#efe4cb). No grid lines, frames, shadows spilling into another cell, text, numbers, marks, letters, watermark, labels, people or hands. Read order is strict. Row 1 left to right: worn woven rice-straw shoes (one pair), blue-and-white Chinese school track jacket neatly folded, dark indigo thick work trousers folded. Row 2: soft worn russet felt workshop cap, slim tan leather forehead band reinforced with parchment strips, a rust-patinated metal rectangular belt buckle with a simple engraved lightning bolt. Row 3: small bronze ferry bell on a knotted red cord, heavy circular cracked dark bronze cauldron lid with a knob, a flat jade-green rectangular water-control talisman engraved with lines resembling flowing water (no writing). In each cell make a single clearly separated readable silhouette at 40 pixels, cover about 70 percent of cell width or height. Antique Chinese woodblock ink and muted mineral pigments, precise observed material textures, realistic objects treated as restrained vintage book illustrations. Equal cell sizes, all nine objects fully visible, no additional objects.
+
+</details>
+
+<details>
 <summary>本版地图与闸口原画（内置 ImageGen）</summary>
 
 [青瓦郡地图](art/locations/qingwa-atlas.webp) 上的地点标记由网页叠加。[功德水表](art/locations/sluice.webp) 在废渠战斗时出场。

@@ -221,6 +221,7 @@
     locate.textContent = quest?.step ? "定位 · " + Quests.describe(quest.step, state) : quest?.note || "";
     $("place-context").textContent = here ? "灭霸所在" : `行程预览 · 第 ${visitDay} 日抵达`;
     $("place-name").textContent = place.name;
+    $("place-vignette").dataset.site = selected;
     $("place-tag").textContent = place.tag;
     $("place-lore").textContent = World.describe(preview, selected);
     $("visitors").textContent = `${here ? "今日在场" : "抵达时在场"}　${visitors.map(([,p]) => p.name).join("、") || "暂无熟人"}`;
@@ -263,6 +264,7 @@
     arena.dataset.foe = b.id;
     arena.dataset.outcome = b.outcome || "";
     arena.toggleAttribute("data-charging", !b.outcome && !!info.charging);
+    arena.toggleAttribute("data-resting", b.id === "thor" && !b.outcome && b.effect === "cool" && !info.charging);
     const mood = won || b.effect === "interrupt" ? "smug" : lost || b.effect === "penalty" ? "hurt" : "steady";
     $("arena-art").dataset.mood = mood;
     const remark = won ? "这回谁签字？我手腾不开。" : lost ? "先歇一会儿。别写我旷课。" :
@@ -486,7 +488,8 @@
       void arena.offsetWidth;
       arena.dataset.gesture = cue;
       if (cue === "charge") arena.setAttribute("data-charging", "");
-      if (["thunder", "blocked", "interrupted"].includes(cue)) arena.removeAttribute("data-charging");
+      if (["thunder", "blocked", "interrupted", "cool"].includes(cue)) arena.removeAttribute("data-charging");
+      if (side === "foe") arena.toggleAttribute("data-resting", cue === "cool");
       $("announcement-title").textContent = side === "hero" ? "灭霸行动" : `${Encounters.foes[b.id].title}行动`;
       $("announcement-description").textContent = text;
       playback.timer = setTimeout(() => {
@@ -499,7 +502,8 @@
           arena.dataset.impact = "blocked";
           $("battle-impact").textContent = "格挡";
         }
-        playback.timer = setTimeout(step, 215);
+        const hold = b.id === "thor" && ["charge", "thunder", "cool"].includes(cue) ? 345 : 215;
+        playback.timer = setTimeout(step, hold);
       }, 105);
     }
     step();
@@ -541,6 +545,17 @@
   };
   const panelTitles = { character: "人物", bag: "背包", journal: "郡中纪事" };
   const artifactName = id => id ? World.items[id][0] : "未装备";
+  // Cells are in reading order in the 3 × 3 equipment atlas.
+  const equipmentArt = ["shoes", "jacket", "trousers", "cap", "tallyBand", "buckle", "reedBell", "lid", "seal"];
+  const gearStats = [["maxHealth", "体力上限"], ["attack", "攻击"], ["defense", "防御"], ["speed", "身法"]];
+  function itemArt(id) {
+    const art = el("span", undefined, "item-art");
+    const cell = equipmentArt.indexOf(id);
+    art.setAttribute("aria-hidden", "true");
+    if (cell === -1) art.classList.add("item-art-empty");
+    else art.style.backgroundPosition = `${cell % 3 * 50}% ${Math.floor(cell / 3) * 50}%`;
+    return art;
+  }
   const ownedItems = category => bagCategories[category].ids.filter(id => state.inventory[id] > 0);
 
   function effectList(effects) {
@@ -594,8 +609,12 @@
     const rack = el("div", undefined, "slot-rack");
     for (const [slot, name] of Object.entries(Encounters.slots)) {
       const btn = ledgerButton("slot-" + slot, undefined, "slot-entry");
+      const worn = state.equipped[slot];
       btn.dataset.slot = slot;
-      btn.append(el("small", name), el("strong", artifactName(state.equipped[slot])));
+      btn.toggleAttribute("data-worn", !!worn);
+      const caption = el("span");
+      caption.append(el("small", name), el("strong", worn ? artifactName(worn) : "空槽"));
+      btn.append(itemArt(worn), caption);
       rack.append(btn);
     }
     equipment.append(el("h3", "随身装备"), rack);
@@ -612,17 +631,20 @@
   }
   function gearColumn(label, id, loadout) {
     const column = el("div", undefined, "gear-column");
-    column.append(el("p", label, "field-label"), el("strong", artifactName(id), "gear-name"));
+    const heading = el("div", undefined, "gear-heading");
+    const caption = el("div");
+    caption.append(el("p", label, "field-label"), el("strong", artifactName(id), "gear-name"));
+    heading.append(itemArt(id), caption);
     const stats = Encounters.attributes(state, loadout);
     const current = Encounters.attributes(state);
     const details = el("dl", undefined, "gear-stats");
-    for (const [key, title] of [["maxHealth", "体力上限"], ["attack", "攻击"], ["defense", "防御"], ["speed", "身法"]]) {
+    for (const [key, title] of gearStats) {
       const delta = stats[key] - current[key];
       const value = el("dd", stats[key].toLocaleString("zh-CN"));
-      if (delta) value.append(el("small", `(${delta > 0 ? "+" : "−"}${Math.abs(delta)})`, delta > 0 ? "gear-increase" : "gear-decrease"));
+      if (delta) caption.append(el("small", `${title} ${delta > 0 ? "+" : "−"}${Math.abs(delta).toLocaleString("zh-CN")}`, delta > 0 ? "gear-increase" : "gear-decrease"));
       details.append(el("dt", title), value);
     }
-    column.append(details);
+    column.append(heading, details);
     const effects = Encounters.artifactEffects(id, state);
     if (effects.length) column.append(effectList(effects));
     return column;
@@ -677,8 +699,12 @@
       button.dataset.item = id;
       button.setAttribute("aria-pressed", String(id === bagItem));
       button.setAttribute("aria-controls", "pack-detail");
-      button.append(el("strong", World.items[id][0]), el("span", `×${state.inventory[id]}`));
-      if (Object.values(state.equipped).includes(id)) button.append(el("small", "已装备"));
+      const label = el("div", undefined, "pack-item-label");
+      label.append(el("strong", World.items[id][0]));
+      if (Object.values(state.equipped).includes(id)) label.append(el("small", "已穿戴"));
+      button.toggleAttribute("data-gear", bagCategory === "gear");
+      if (bagCategory === "gear") button.append(itemArt(id));
+      button.append(label, el("span", `×${state.inventory[id]}`, "pack-quantity"));
       li.append(button);
       list.append(li);
     }
@@ -696,8 +722,8 @@
       const equipped = bagItem === worn;
       const preview = el("div", undefined, "gear-preview");
       detail.append(el("p", Encounters.slots[slot] + " · " + itemNote(bagItem), "pack-usage"));
-      if (!equipped) preview.append(gearColumn("当前" + Encounters.slots[slot], worn, state.equipped));
-      preview.append(gearColumn(equipped ? "已装备" : "换装后", bagItem, { ...state.equipped, [slot]: bagItem }));
+      if (!equipped) preview.append(gearColumn(worn ? "待替换 · " + Encounters.slots[slot] : "当前" + Encounters.slots[slot], worn, state.equipped));
+      preview.append(gearColumn(equipped ? "已穿戴" : "换装后", bagItem, { ...state.equipped, [slot]: bagItem }));
       const action = ledgerButton("pack-equip", equipped ? "卸下" : worn ? "换上" : "装备", "pack-equip");
       action.disabled = !!state.battle;
       detail.append(preview, action);

@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="character.css?v=battle-motion">
   <link rel="stylesheet" href="dialogue.css">
   <link rel="stylesheet" href="exploration.css">
+  <link rel="stylesheet" href="battle-visuals.css">
   <script src="encounters.js" defer></script>
   <script src="water-case.js" defer></script>
   <script src="first-rain.js" defer></script>
@@ -80,6 +81,7 @@
       <section class="local-sheet" id="local-sheet" aria-labelledby="place-name">
         <div class="local-head"><span class="field-label" id="place-context"></span><span id="place-tag"></span></div>
         <h2 id="place-name" tabindex="-1">灭家村</h2>
+        <div id="place-vignette" class="place-vignette" data-site="village" aria-hidden="true"></div>
         <p id="place-lore"></p>
         <p class="visitors" id="visitors"></p>
         <details id="water-voices" hidden>
@@ -128,8 +130,16 @@
       <div class="arena-art" id="arena-art" role="img" aria-label="灭霸与对手对阵">
         <div class="player-fighter"><div class="hero-stage" data-hero-art aria-hidden="true"><span class="snap-mark">啪</span></div></div>
         <img class="furnace" id="furnace-art" loading="lazy" src="art/concepts/attendance-furnace.png" width="1254" height="1254" alt="">
+        <div class="thor-fighter" aria-hidden="true">
+          <div class="thor-silhouette">
+            <img class="thor-body" src="art/locations/thor-inspection.webp" width="1280" height="720" alt="" loading="lazy">
+            <div class="thor-hammer">
+              <img class="thor-arm" src="art/locations/thor-inspection.webp" width="1280" height="720" alt="" loading="lazy">
+              <span class="hammer-light"></span>
+            </div>
+          </div>
+        </div>
         <span class="furnace-effect" aria-hidden="true"></span>
-        <span class="hammer-light" aria-hidden="true"></span>
         <span class="battle-impact" id="battle-impact" aria-hidden="true"></span>
       </div>
 
