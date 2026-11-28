@@ -1,0 +1,92 @@
+.start-view, .prologue-view {
+  min-height: 100svh;
+  display: grid;
+  padding: clamp(1rem, 6.5vw, 6rem);
+}
+.start-view {
+  align-items: center;
+  background: #38473c url("art/locations/qingwa-atlas.webp") center 46% / cover;
+}
+.start-sheet, .prologue-sheet {
+  color: var(--ink);
+  background: #f6efdf;
+  border: 1px solid #aa9472;
+  border-top: 4px solid #7e4c39;
+}
+.start-sheet {
+  width: min(100%, 29rem);
+  padding: clamp(1.25rem, 4vw, 2.6rem);
+  box-shadow: 0 .3rem 2rem #222b2150;
+}
+.start-heading { margin-block-end: 1.15rem; }
+.start-region { color: var(--seal); font-size: .84rem; font-weight: 700; letter-spacing: .12em; }
+.start-heading h1, .prologue-page h1 {
+  margin: .17em 0;
+  font: 700 clamp(2rem, 4.5vw, 3.85rem)/1.12 var(--font-title);
+  color: #223b31;
+}
+.start-heading .game-version { color: var(--muted); }
+.start-premise { color: #575547; line-height: 1.65; text-wrap: pretty; }
+.start-actions { display: grid; gap: .45rem; margin-block-start: 1.3rem; }
+.start-sheet button, .prologue-sheet button {
+  min-height: 2.75rem;
+  padding: .35rem .7rem;
+  border: 1px solid #aa9b7e;
+  font: inherit;
+  color: #263d32;
+  background: transparent;
+  cursor: pointer;
+}
+.start-actions button { text-align: start; }
+.start-sheet button:hover, .prologue-sheet button:hover { border-color: var(--bronze); background: #eae1cc; }
+.start-sheet .start-primary, .prologue-sheet .start-primary, #start-continue[hidden] + #start-new {
+  color: #fff4dc; background: #294539; border-color: #294539; font-weight: 700;
+}
+.start-sheet .start-primary:hover, .prologue-sheet .start-primary:hover, #start-continue[hidden] + #start-new:hover {
+  background: #3a594b;
+}
+.start-feedback { color: #753f31; font-size: .87rem; margin-block-start: .85rem; }
+.start-feedback:empty { display: none; }
+.save-list-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.save-list-head h2 { font: 700 1.2rem var(--font-title); }
+.save-list-head button, .start-sheet .slot-delete { border-color: transparent; }
+.save-list { list-style: none; padding: 0; margin: .55rem 0 0; }
+.save-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: .3rem;
+  padding: .5rem 0;
+  border-block-start: 1px solid #c9bda4;
+}
+.save-slot-info { min-width: 0; }
+.save-slot-info strong, .save-slot-info small { display: block; }
+.save-slot-info small { color: #605744; font-size: .8rem; }
+.save-slot-actions { display: flex; align-items: center; gap: .25rem; }
+.start-sheet .slot-delete { color: #804936; }
+.prologue-view { align-items: center; justify-items: center; background: #263c32; }
+.prologue-sheet { width: min(100%, 66rem); display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+.prologue-visual { position: relative; min-width: 0; }
+.prologue-art { display: block; width: 100%; height: 100%; min-height: 19rem; object-fit: cover; }
+.prologue-notice {
+  position: absolute; top: 47%; left: 75%; white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-9deg);
+  color: #624532; font: 700 clamp(.68rem, 1.35vw, 1.12rem)/1.65 var(--font-title);
+  text-align: center; pointer-events: none;
+}
+.prologue-page { align-self: center; padding: clamp(1.25rem, 3vw, 2.6rem); }
+.prologue-page h1 { font-size: clamp(1.75rem, 3vw, 2.5rem); }
+#prologue-copy { line-height: 1.8; color: #514d3e; margin-block-start: .75rem; }
+.prologue-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-block-start: 1.35rem; }
+.prologue-actions #prologue-back { margin-inline-end: auto; }
+.battle-save-note { margin-block-start: .35rem; color: var(--muted); font-size: .84rem; }
+
+@media (max-width: 47rem) {
+  .start-view { align-items: end; justify-items: center; padding: 5rem 1rem 1rem; background-position: 56% center; }
+  .prologue-view { padding: .9rem; }
+  .prologue-sheet { grid-template-columns: minmax(0, 1fr); max-width: 31rem; }
+  .prologue-art { height: auto; min-height: 0; aspect-ratio: 16 / 9; }
+}
+@media (max-width: 23rem) {
+  .start-sheet .save-slot-actions { flex-direction: column; gap: .1rem; align-items: end; }
+}

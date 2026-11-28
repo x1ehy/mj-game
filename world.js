@@ -124,6 +124,17 @@ const World = ((combat, water, rain) => {
     s.version = 5;
     return s;
   }
+  function resumeSave(s) {
+    upgradeSave(s);
+    if (s.battle && !s.battle.outcome) {
+      // v0.1.0 saved active rounds. Refund the doses still listed in their battle log.
+      const dose = `灭霸服下${combat.pill.name}，灵力 +`;
+      const used = s.battle.turns.filter(turn => turn.text.includes(dose)).length;
+      if (used) gain(s, "pill", used);
+      s.battle = null;
+    }
+    return s;
+  }
   function passDay(s) {
     s.day++;
     if (s.day >= boundary && s.deed === "pending") {
@@ -398,7 +409,7 @@ const World = ((combat, water, rain) => {
     if (b.outcome === "defeat") log(s, `灭霸败给${combat.foes[b.id].title}，可以重整旗鼓或回地图。`);
     return true;
   }
-  return { places, people, items, deeds, boundary, realmNames, discoveryIds: Object.keys(discoveries), breakthrough, fresh, realm, relation, describe, armorScale, upgradeSave,
+  return { places, people, items, deeds, boundary, realmNames, discoveryIds: Object.keys(discoveries), breakthrough, fresh, realm, relation, describe, armorScale, upgradeSave, resumeSave,
     locationOf, orders, act, travel, equip, fight, victoryReport };
 })(typeof module !== "undefined" && module.exports ? require("./encounters.js") : Encounters,
    typeof module !== "undefined" && module.exports ? require("./water-case.js") : WaterCase,

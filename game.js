@@ -2,15 +2,19 @@
 
 (() => {
   const $ = id => document.getElementById(id);
-  const saveKey = "mj-game.qingwa.v1";
+  const slots = SaveSlots.create(() => localStorage);
   let state = World.fresh();
+  let activeSlot = null;
+  let menuPage = "home";
+  let continueSlot = null;
+  let opening = null;
+  let resetTarget = null;
   let selected = state.place;
   let panel = "";
   let bagCategory = "gear";
   let bagItem = null;
   let bagSlot = "";
   let lastSave = null;
-  let preserveSave = false;
   let saveMessage = "";
   let playback = null;
   let crossing = null;
@@ -53,44 +57,50 @@
       && [null, "victory", "defeat"].includes(b.outcome) && Array.isArray(b.turns) && b.turns.length
       && b.turns.every(x => x && isCount(x.round) && typeof x.text === "string");
   }
-  function load(raw) {
-    lastSave = raw;
-    preserveSave = false;
+  function parseSave(raw) {
     try {
-      const next = raw === null ? World.fresh() : JSON.parse(raw);
-      if (!validSave(next)) throw new Error("save");
-      state = World.upgradeSave(next);
-      saveMessage = raw === null ? "行动后自动存档" : "已存入本机";
-    } catch {
-      state = World.fresh();
-      preserveSave = true;
-      saveMessage = "旧存档无法读取。本次可临时游玩，在纪事中另开新局可恢复保存。";
-    }
+      const data = JSON.parse(raw);
+      return validSave(data) ? data : null;
+    } catch { return null; }
+  }
+  function load(data, { raw, persistent }) {
+    state = data ? World.resumeSave(data) : World.fresh();
+    lastSave = raw;
+    saveMessage = persistent ? `已存入槽位 ${activeSlot}` : "进度暂存在此标签页";
     selected = state.place;
   }
-  try { load(localStorage.getItem(saveKey)); }
-  catch { saveMessage = "浏览器暂时无法存档，本次可继续游玩。"; }
   function save() {
-    if (preserveSave) return;
-    try {
-      const raw = JSON.stringify(state);
-      localStorage.setItem(saveKey, raw);
-      lastSave = raw; saveMessage = "已存入本机";
-    } catch { saveMessage = "浏览器暂时无法存档，本次可继续游玩。"; }
+    if (!activeSlot) return;
+    // Until a fight is settled, the slot retains the last exploration snapshot.
+    if (state.battle && !state.battle.outcome) {
+      saveMessage = "战斗中 · 读档回到开战前";
+      return;
+    }
+    const raw = JSON.stringify(state);
+    const persistent = slots.write(activeSlot, raw);
+    lastSave = raw;
+    saveMessage = persistent ? `已存入槽位 ${activeSlot}` : "进度暂存在此标签页";
   }
   function checkForNewerSave() {
-    try {
-      const raw = localStorage.getItem(saveKey);
-      if (raw !== lastSave) {
-        if ($("reset-dialog").open) $("reset-dialog").close();
-        if ($("story-dialog").open) $("story-dialog").close();
-        load(raw); render(); announce("另一页已更新存档，请按当前局势重新选择。"); return true;
-      }
-    } catch { /* Memory-only play is still available. */ }
-    return false;
+    if (!activeSlot) return false;
+    const entry = slots.read(activeSlot);
+    if (!entry.persistent || entry.raw === lastSave) return false;
+    const data = parseSave(entry.raw);
+    if (!data) {
+      showMenu("slots", "当前槽位已在另一页清除或无法读取。请选择要继续的存档。");
+      return true;
+    }
+    closeDialog("reset-dialog");
+    closeDialog("story-dialog");
+    load(data, entry);
+    render();
+    if ($("ledger").open) renderLedger();
+    announce("另一页已更新当前槽位，请按当前局势重新选择。");
+    return true;
   }
   window.addEventListener("storage", event => {
-    if ((event.key === saveKey || event.key === null) && checkForNewerSave() && $("ledger").open) renderLedger();
+    if (activeSlot && (event.key === SaveSlots.key(activeSlot) || event.key === null)) checkForNewerSave();
+    else if (!activeSlot && !opening && (event.key === null || SaveSlots.ids.some(id => event.key === SaveSlots.key(id)))) renderMenu();
   });
   function el(tag, text, className) {
     const node = document.createElement(tag);
@@ -257,6 +267,7 @@
     renderTips();
     const b = state.battle, foe = Encounters.foes[b.id], info = Encounters.forecast(b, state);
     const won = b.outcome === "victory", lost = b.outcome === "defeat";
+    $("battle-save-note").hidden = !!b.outcome;
     $("case-title").textContent = foe.caseTitle; $("case-premise").textContent = foe.intro;
     $("battle-realm").textContent = World.realm(state);
     $("arena-art").setAttribute("aria-label", `左侧是灭霸，右侧是${foe.title}。`);
@@ -304,7 +315,10 @@
   function render() {
     cancelCrossing();
     stopPlayback();
-    $("battle-view").hidden = !state.battle; $("atlas-view").hidden = !!state.battle;
+    $("game-binding").hidden = !activeSlot;
+    $("battle-view").hidden = !activeSlot || !state.battle;
+    $("atlas-view").hidden = !activeSlot || !!state.battle;
+    if (!activeSlot) return;
     if (state.battle) renderBattle(); else renderAtlas();
   }
   function cancelCrossing() {
@@ -781,7 +795,7 @@
       const li = el("li"); li.append(el("strong", `第 ${line.day} 日`, "log-day"), document.createTextNode(line.text)); list.append(li);
     }
     body.append(el("h3", "人物行踪"), people, el("h3", "游历记录"), list, el("p", saveMessage, "ledger-note"));
-    body.append(ledgerButton("toggle-tips", state.hideTips ? "显示新手提示" : "关闭新手提示"), ledgerButton("ask-reset", "另开新局"));
+    body.append(ledgerButton("toggle-tips", state.hideTips ? "显示新手提示" : "关闭新手提示"), ledgerButton("ledger-menu", "选择存档"));
   }
   function renderLedger() {
     const body = $("ledger-content");
@@ -821,7 +835,7 @@
       $("save-status").textContent = saveMessage;
       return;
     }
-    if (btn.id === "ask-reset") { openReset("restart"); return; }
+    if (btn.id === "ledger-menu") { showMenu("slots"); return; }
     if (btn.dataset.slot) { openLedger("bag", "gear", btn.dataset.slot); return; }
     if (btn.dataset.track || btn.dataset.locate) {
       const task = Quests.list(state).find(t => t.id === (btn.dataset.track || btn.dataset.locate) && !t.result);
@@ -873,22 +887,188 @@
   $("nav-bag").addEventListener("click", () => openLedger("bag"));
   $("nav-journal").addEventListener("click", () => openLedger("journal"));
   $("close-ledger").addEventListener("click", () => $("ledger").close());
+
+  const prologue = [
+    {
+      title: "天门闭了三十年",
+      art: "art/locations/qingwa-atlas.webp",
+      copy: "天门关得严，凡间的灵气却照旧往低处流。仙盟派人来青瓦郡丈量灵田，说从今往后，每一畦地、每一股水，都要在册子上对得上号。",
+    },
+    {
+      title: "村口贴了新告示",
+      art: "art/locations/village-notice.webp",
+      notice: true,
+      copy: "灭霸穿着校服回村，在告示上看见「无主灵田一亩，第五日交割」。田号分明是自家的。田里，灭建国正弯腰拔草，褪色的草帽一晃一晃。",
+    },
+  ];
+
+  function closeDialog(id) {
+    if ($(id).open) $(id).close();
+  }
+  function readSlot(id) {
+    const entry = slots.read(id);
+    return { id, ...entry, data: parseSave(entry.raw) };
+  }
+  function saveSummary(data) {
+    return `第 ${data.day} 日 · ${World.places[data.place].name} · ${World.realm(data)}`;
+  }
+  function makeSlotRow(entry) {
+    const { id, raw, data, persistent } = entry;
+    const row = el("li", undefined, "save-row");
+    const info = el("div", undefined, "save-slot-info");
+    let details = data ? saveSummary(data) : raw === null ? "空槽" : "存档无法读取";
+    if (data?.battle && !data.battle.outcome) details += " · 续玩从战前开始";
+    if (raw !== null && !persistent) details += " · 临时存档";
+    info.append(el("strong", `槽位 ${id}`), el("small", details));
+    const actions = el("div", undefined, "save-slot-actions");
+    if (raw === null || data) {
+      const label = data ? "继续" : "新开";
+      const button = ledgerButton(`slot-open-${id}`, label, data ? "start-primary" : "");
+      button.dataset.openSlot = id;
+      button.setAttribute("aria-label", `${label}槽位 ${id}`);
+      actions.append(button);
+    }
+    if (raw !== null) {
+      const button = ledgerButton(`slot-clear-${id}`, "清除", "slot-delete");
+      button.dataset.clearSlot = id;
+      button.setAttribute("aria-label", `清除槽位 ${id}的存档`);
+      actions.append(button);
+    }
+    row.append(info, actions);
+    return row;
+  }
+  function renderMenu(message = "") {
+    const entries = SaveSlots.ids.map(readSlot);
+    const last = slots.lastPlayed();
+    const candidate = entries.find(entry => entry.id === last && entry.data) || entries.find(entry => entry.data);
+    continueSlot = candidate?.id ?? null;
+    $("start-continue").hidden = !candidate;
+    if (candidate) $("start-continue").textContent = `继续游历 · 槽位 ${candidate.id}`;
+    $("start-home").hidden = menuPage !== "home";
+    $("start-saves").hidden = menuPage !== "slots";
+    if (menuPage === "slots") {
+      const focus = $("save-list").contains(document.activeElement) ? document.activeElement.id : "";
+      $("save-list").replaceChildren(...entries.map(makeSlotRow));
+      if (focus) ($(focus) || $("save-list-title")).focus({ preventScroll: true });
+    }
+    const temporary = entries.every(entry => !entry.persistent);
+    $("start-feedback").textContent = message || (temporary ? "浏览器存储不可用。临时进度会随此标签页关闭或刷新而消失。" : "");
+  }
+  function showMenu(page = "home", message = "", focus = true) {
+    activeSlot = null;
+    opening = null;
+    menuPage = page;
+    for (const id of ["story-dialog", "ledger", "reset-dialog"]) closeDialog(id);
+    $("prologue-view").hidden = true;
+    $("start-view").hidden = false;
+    render();
+    renderMenu(message);
+    window.scrollTo(0, 0);
+    if (focus) $(page === "home" ? "start-title" : "save-list-title").focus({ preventScroll: true });
+  }
+  function beginPlay(entry) {
+    const { id, data } = entry;
+    const atCheckpoint = data?.battle && !data.battle.outcome;
+    activeSlot = id;
+    opening = null;
+    load(data, entry);
+    if (!data || atCheckpoint) save();
+    slots.choose(id);
+    $("start-view").hidden = true;
+    $("prologue-view").hidden = true;
+    $("water-voices").open = false;
+    $("duel-details").open = false;
+    $("local-sheet").scrollTop = 0;
+    render();
+    window.scrollTo(0, 0);
+    $(state.battle ? "case-title" : "place-name").focus({ preventScroll: true });
+    if (atCheckpoint) announce("已从开战前的地点续玩。");
+  }
+  function continuePlay(id) {
+    if (!id) return;
+    const entry = readSlot(id);
+    if (entry.data) beginPlay(entry);
+    else showMenu("slots", "所选存档已变动，请选择一个可用的槽位。");
+  }
+  function renderPrologue() {
+    const scene = prologue[opening.page];
+    $("prologue-art").src = scene.art;
+    $("prologue-page").textContent = `序章 · ${opening.page + 1} / ${prologue.length}`;
+    $("prologue-notice").hidden = !scene.notice;
+    $("prologue-title").textContent = scene.title;
+    $("prologue-copy").textContent = scene.copy;
+    $("prologue-back").textContent = opening.page ? "上一幕" : "返回";
+    $("prologue-next").textContent = opening.page === prologue.length - 1 ? "进入青瓦郡" : "下一幕";
+    $("prologue-title").focus({ preventScroll: true });
+  }
+  function beginPrologue(id) {
+    if (slots.read(id).raw !== null) {
+      showMenu("slots", "这个槽位已有记录，请选择一个空槽。");
+      return;
+    }
+    opening = { id, page: 0, from: menuPage };
+    $("start-view").hidden = true;
+    $("prologue-view").hidden = false;
+    window.scrollTo(0, 0);
+    renderPrologue();
+  }
+  function finishPrologue() {
+    if (!opening) return;
+    const entry = readSlot(opening.id);
+    if (entry.raw !== null) showMenu("slots", "序章期间，另一页已使用这个槽位。请选择一个空槽。");
+    else beginPlay(entry);
+  }
+  $("start-continue").addEventListener("click", () => continuePlay(continueSlot));
+  $("start-new").addEventListener("click", () => {
+    const empty = SaveSlots.ids.find(id => slots.read(id).raw === null);
+    if (empty) beginPrologue(empty);
+    else showMenu("slots", "三个槽位都有记录。要另开游历，可以先清除一个槽位。");
+  });
+  $("start-slots").addEventListener("click", () => showMenu("slots"));
+  $("start-back").addEventListener("click", () => showMenu());
+  $("nav-menu").addEventListener("click", () => {
+    if (!crossing) showMenu();
+  });
+  $("save-list").addEventListener("click", event => {
+    const button = event.target.closest("button");
+    if (button?.dataset.clearSlot) openReset(Number(button.dataset.clearSlot));
+    if (button?.dataset.openSlot) {
+      const id = Number(button.dataset.openSlot);
+      if (slots.read(id).raw === null) beginPrologue(id);
+      else continuePlay(id);
+    }
+  });
+  $("prologue-back").addEventListener("click", () => {
+    if (!opening) return;
+    if (opening.page === 0) showMenu(opening.from);
+    else { opening.page--; renderPrologue(); }
+  });
+  $("prologue-skip").addEventListener("click", finishPrologue);
+  $("prologue-next").addEventListener("click", () => {
+    if (!opening) return;
+    if (opening.page === prologue.length - 1) finishPrologue();
+    else { opening.page++; renderPrologue(); }
+  });
+
   const resetDialog = $("reset-dialog");
-  function openReset(mode) {
-    if (crossing || resetDialog.open) return;
-    checkForNewerSave();
-    resetDialog.dataset.mode = mode;
-    const restart = mode === "restart";
-    $("reset-title").textContent = restart ? "覆盖存档，另开新局？" : "清除当前存档？";
-    const where = preserveSave ? "此浏览器中的旧存档" : `第 ${state.day} 日 · ${World.places[state.place].name}的游历记录`;
-    $("reset-warning").textContent = `${where}将被${restart ? "覆盖" : "删除"}，包括物品、人物关系和战斗进度。此操作无法撤销。确认后将回到灭家村第一天。`;
-    $("reset-confirm").textContent = restart ? "确认重开" : "确认清除";
+  function openReset(id) {
+    if (!id || crossing || resetDialog.open) return;
+    if (id === activeSlot && checkForNewerSave()) return;
+    const entry = readSlot(id);
+    if (entry.raw === null) return;
+    resetTarget = entry;
+    $("reset-title").textContent = `清除槽位 ${id}？`;
+    const where = entry.data ? saveSummary(entry.data) : "无法读取的存档";
+    $("reset-warning").textContent = entry.persistent
+      ? `${where}。确认后将删除此槽位的游历记录，包括物品、人物关系和剧情进度。此操作无法撤销。`
+      : `${where}。确认后将删除此标签页里的临时进度。`;
     $("reset-error").hidden = true;
     resetDialog.showModal();
     $("reset-cancel").focus();
   }
-  $("nav-clear").addEventListener("click", () => openReset("clear"));
+  $("nav-clear").addEventListener("click", () => openReset(activeSlot));
   document.addEventListener("keydown", event => {
+    if (!activeSlot) return;
     const shortcuts = { b: "bag", j: "journal" };
     const tab = shortcuts[event.key.toLowerCase()];
     if (tab && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey && !event.repeat && !event.isComposing
@@ -902,27 +1082,27 @@
     if (event.key !== "Delete" || !event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing || event.defaultPrevented) return;
     if (document.querySelector("dialog[open]") || event.target.isContentEditable || event.target.closest?.("input, textarea, select")) return;
     event.preventDefault();
-    openReset("clear");
+    openReset(activeSlot);
   });
   $("reset-cancel").addEventListener("click", () => resetDialog.close());
   $("reset-confirm").addEventListener("click", () => {
-    if (!resetDialog.open || checkForNewerSave()) return;
-    const restart = resetDialog.dataset.mode === "restart";
-    if (!restart) {
-      try { localStorage.removeItem(saveKey); }
-      catch {
-        $("reset-error").textContent = "浏览器未能清除存档。请重试或选择保留存档。";
-        $("reset-error").hidden = false;
-        return;
-      }
+    if (!resetDialog.open) return;
+    const { id, raw, persistent } = resetTarget;
+    const current = slots.read(id);
+    if (current.raw !== raw || current.persistent !== persistent) {
+      closeDialog("reset-dialog");
+      if (activeSlot) checkForNewerSave();
+      else renderMenu("这个槽位已在另一页更新，请重新确认。");
+      return;
     }
-    load(null);
-    if (restart) save();
-    resetDialog.close();
-    if ($("ledger").open) $("ledger").close();
-    render();
-    $("place-name").focus();
-    announce(restart ? "已另开新局。" : "当前存档已清除，已回到灭家村第一天。");
+    try { slots.clear(id); }
+    catch {
+      $("reset-error").textContent = "浏览器未能清除存档。请重试或选择保留存档。";
+      $("reset-error").hidden = false;
+      return;
+    }
+    showMenu("slots", `已清除槽位 ${id}的${persistent ? "" : "临时"}存档。`);
   });
-  render();
+  $("start-version").textContent = $("game-version").textContent;
+  showMenu("home", "", false);
 })();

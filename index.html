@@ -12,33 +12,79 @@
   <link rel="stylesheet" href="dialogue.css">
   <link rel="stylesheet" href="exploration.css">
   <link rel="stylesheet" href="battle-visuals.css">
+  <link rel="stylesheet" href="start.css">
   <script src="encounters.js" defer></script>
   <script src="water-case.js" defer></script>
   <script src="first-rain.js" defer></script>
   <script src="world.js" defer></script>
   <script src="quests.js" defer></script>
+  <script src="save-slots.js" defer></script>
   <script src="game.js" defer></script>
 </head>
 <body>
-  <header class="binding">
+  <header class="binding" id="game-binding" hidden>
     <div class="binding-inner">
       <div class="wordmark"><span class="book-seal" aria-hidden="true">郡</span>爱慕杰修仙志</div>
       <nav aria-label="行旅手册">
         <button type="button" id="nav-character" aria-haspopup="dialog">人物</button>
         <button type="button" id="nav-bag" aria-haspopup="dialog" aria-keyshortcuts="B">背包 <kbd>B</kbd></button>
         <button type="button" id="nav-journal" aria-haspopup="dialog" aria-keyshortcuts="J">郡中纪事 <kbd>J</kbd></button>
+        <button type="button" id="nav-menu" aria-label="返回开始菜单">菜单</button>
         <button type="button" id="nav-clear" aria-haspopup="dialog" aria-keyshortcuts="Shift+Delete" title="清除当前存档（Shift + Delete）">清除存档</button>
       </nav>
     </div>
   </header>
   <noscript><p class="noscript">请启用 JavaScript 以开启游历。</p></noscript>
-  <main class="atlas-shell" id="atlas-view">
+  <main class="start-view" id="start-view" aria-labelledby="start-title" hidden>
+    <div class="start-sheet">
+      <header class="start-heading">
+        <p class="start-region">青瓦郡</p>
+        <h1 id="start-title" tabindex="-1">爱慕杰修仙志</h1>
+        <small id="start-version" class="game-version"></small>
+      </header>
+      <section id="start-home" aria-label="开始菜单">
+        <p class="start-premise">天门关了三十年。灭霸回村这天，自家的灵田被登记成了无主地。</p>
+        <div class="start-actions">
+          <button type="button" id="start-continue" class="start-primary" hidden>继续游历</button>
+          <button type="button" id="start-new">新开游历</button>
+          <button type="button" id="start-slots">选择存档</button>
+        </div>
+      </section>
+      <section id="start-saves" aria-labelledby="save-list-title" hidden>
+        <header class="save-list-head">
+          <h2 id="save-list-title" tabindex="-1">选择存档</h2>
+          <button type="button" id="start-back">返回</button>
+        </header>
+        <ol id="save-list" class="save-list"></ol>
+      </section>
+      <p id="start-feedback" class="start-feedback" role="status"></p>
+    </div>
+  </main>
+  <main class="prologue-view" id="prologue-view" aria-labelledby="prologue-title" hidden>
+    <div class="prologue-sheet">
+      <div class="prologue-visual">
+        <img class="prologue-art" id="prologue-art" alt="" width="1280" height="720">
+        <span class="prologue-notice" id="prologue-notice" aria-hidden="true" hidden>无主灵田一亩<br>第五日交割</span>
+      </div>
+      <section class="prologue-page">
+        <p class="start-region" id="prologue-page"></p>
+        <h1 id="prologue-title" tabindex="-1"></h1>
+        <p id="prologue-copy"></p>
+        <div class="prologue-actions">
+          <button type="button" id="prologue-back">返回</button>
+          <button type="button" id="prologue-skip">跳过序章</button>
+          <button type="button" id="prologue-next" class="start-primary">继续</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <main class="atlas-shell" id="atlas-view" hidden>
     <header class="atlas-header">
       <div>
         <h1>青瓦郡山河图</h1>
         <p id="world-premise">天门闭了三十年。仙盟重划灵脉，灭家的田要在第五日交割。</p>
       </div>
-      <div class="almanac"><span>郡历</span><strong id="day">第 1 日</strong><small class="game-version">v0.1.0</small></div>
+      <div class="almanac"><span>郡历</span><strong id="day">第 1 日</strong><small id="game-version" class="game-version">v0.2.0</small></div>
     </header>
     <section class="atlas-dispatch" aria-label="追踪任务">
       <div class="quest-heading"><span class="field-label">追踪任务</span><span id="quest-deadline"></span></div>
@@ -111,6 +157,7 @@
       <p class="masthead"><button type="button" id="leave-battle">← 回山河图</button><span id="battle-place"></span></p>
       <h1 id="case-title" tabindex="-1"></h1>
       <p class="premise" id="case-premise"></p>
+      <p id="battle-save-note" class="battle-save-note" hidden>读档会回到开战前。结算后会自动存档。</p>
     </header>
 
     <div class="battle" id="battle">
