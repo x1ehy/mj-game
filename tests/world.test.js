@@ -59,7 +59,7 @@ test("equipment changes combat; restored fight pays its unique reward once", () 
   fight(s, "leave"); assert.equal(W.act(s, "fight"), false); assert.equal(W.equip(s, "seal"), true);
   travel(s, "academy"); act(s, "fight"); fight(s, "tide");
   const resumed = JSON.parse(JSON.stringify(s));
-  assert.equal(resumed.battle.armor, 4); assert.equal(resumed.battle.health, 5);
+  assert.equal(resumed.battle.armor, 8000); assert.equal(resumed.battle.health, 10000);
   fight(resumed, "hit", "hit", "tide"); assert.equal(resumed.inventory.lid, 1);
   assert.equal(resumed.battle.outcome, "victory");
   fight(resumed, "leave"); travel(resumed, "village"); act(resumed, "witness");
@@ -70,10 +70,10 @@ test("equipment changes combat; restored fight pays its unique reward once", () 
 test("furnace defeat, retry, familiar winning sequence, passive shield, retreat", () => {
   const s = W.fresh(); travel(s, "academy"); act(s, "fight");
   fight(s, "hit", "hit", "hit", "hit"); assert.equal(s.battle.outcome, "defeat");
-  fight(s, "retry"); assert.equal(s.battle.round, 1); assert.equal(s.battle.health, 5);
+  fight(s, "retry"); assert.equal(s.battle.round, 1); assert.equal(s.battle.health, 10000);
   fight(s, "snap", "hit", "hit", "hit", "hit", "hit"); assert.equal(s.inventory.lid, 1);
   fight(s, "leave"); assert.equal(W.equip(s, "lid"), true); travel(s, "canal"); act(s, "fight");
-  fight(s, "hit", "hit"); assert.equal(s.battle.health, 4); assert.equal(s.battle.shield, false);
+  fight(s, "hit", "hit"); assert.equal(s.battle.health, 8000); assert.equal(s.battle.shield, false);
   fight(s, "leave"); act(s, "fight"); assert.equal(s.battle.shield, true);
 });
 
@@ -81,6 +81,6 @@ test("training and gathering reach the next realm and change effective attack st
   const s = W.fresh(); act(s, "train", "train"); assert.equal(W.act(s, "advance"), false);
   travel(s, "canal"); act(s, "gather", "advance", "fight");
   assert.equal(s.day, 5); assert.equal(s.deed, "taken"); assert.equal(s.inventory.herb, 0);
-  assert.equal(s.battle.health, 7); assert.equal(s.battle.spirit, 3);
-  assert.equal(C.intent(s.battle).exposed, true); fight(s, "hit"); assert.equal(s.battle.armor, 4);
+  assert.equal(s.battle.health, 24000); assert.equal(s.battle.spirit, 3);
+  assert.equal(C.intent(s.battle).exposed, true); fight(s, "hit"); assert.equal(s.battle.armor, 5000);
 });

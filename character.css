@@ -1,60 +1,28 @@
-.hero-stage {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  align-items: end;
-  height: calc(100% - 1.45rem);
-  width: min(94%, 15rem);
-  container-type: size;
-}
-
-.hero-portrait {
-  display: block;
-  position: relative;
-  overflow: hidden;
-}
-
-.hero-stage .hero-portrait {
-  width: min(100cqw, 83cqh);
-  aspect-ratio: 5 / 6;
-  border: 1px solid #b99e72;
-  border-bottom: 0;
-  background: #39342e;
-  box-shadow: 0 .3rem .8rem #211c19b3;
-  transform-origin: center 94%;
-}
-
-.hero-stage .hero-portrait::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  box-shadow: inset 0 0 .65rem #201c18a6;
-}
-
-.photo-fighter { container-type: size; }
-.photo-fighter figcaption {
-  width: min(94cqw, 15rem, calc((100cqh - 1.45rem) * .83));
-  padding-block: 0;
-  line-height: 1.45rem;
-  text-align: center;
-}
-
-@media (max-width: 30rem) {
-  .photo-fighter { height: 69%; }
-}
-
+.hero-stage { position: relative; width: 100%; height: 100%; }
+.hero-portrait { display: block; position: relative; overflow: hidden; }
+.hero-stage .hero-portrait { width: 100%; height: 100%; overflow: visible; transform-origin: center bottom; }
 .hero-photo { display: block; }
 .hero-laugh, [data-mood="smug"] .hero-stern { display: none; }
 [data-mood="smug"] .hero-laugh { display: block; }
 
+/* The two classroom stills have different poses. Trace each in its own
+   intrinsic aspect ratio so the arena stays visible around the jacket. */
 .hero-stage .hero-photo {
-  width: 100%;
+  position: absolute;
+  bottom: -1%;
+  left: 50%;
   height: 100%;
-  object-fit: cover;
-  object-position: 48% 14%;
+  width: auto;
+  transform: translateX(-50%);
 }
-
+.hero-stage .hero-stern {
+  clip-path: polygon(10% 100%, 7% 86%, 4% 77%, 4% 68%, 6% 61%, 10% 56%, 17% 52%, 26% 47%, 29% 41%, 31% 40%, 31% 36%, 29% 33%, 29% 27%, 30% 26%, 30% 19%, 31% 13%, 33% 9%, 40% 4%, 43% 3.5%, 50% 7%, 53% 13%, 54% 20%, 56% 27%, 56% 38%, 57% 46%, 59% 49%, 66% 54%, 78% 58%, 83% 62%, 87% 69%, 89% 77%, 95% 87%, 97% 94%, 98% 100%);
+}
+.hero-stage .hero-laugh {
+  height: 118%;
+  bottom: -18%;
+  clip-path: polygon(9% 100%, 8% 92%, 6% 88%, 6% 78%, 9% 65%, 12% 57%, 12% 48%, 14% 43%, 17% 39%, 27% 33%, 35% 29%, 39% 27%, 40% 25%, 38% 20%, 38% 16%, 39% 11%, 40% 8%, 43% 5.5%, 47% 4.5%, 53% 6%, 56% 9%, 57% 14%, 59% 16%, 59% 25%, 62% 26%, 69% 30%, 81% 36%, 89% 42%, 91% 51%, 97% 57%, 100% 60%, 100% 100%, 86% 100%, 86% 93%, 91% 88%, 83% 79%, 80% 70%, 79% 93%, 77% 100%);
+}
 .hero-stage .snap-mark {
   position: absolute;
   z-index: 2;
@@ -70,6 +38,14 @@
 }
 .arena-art[data-effect="penalty"] .hero-portrait { animation: flinch 340ms ease-out; }
 .arena-art[data-gesture="snap"] .snap-mark { animation: snap-print 560ms ease-out; }
+.arena-art:is([data-gesture="hit"], [data-gesture="counter"], [data-gesture="tide"]) .player-fighter {
+  transform-origin: center bottom;
+  animation: shoulder-strike 300ms ease-out;
+}
+@keyframes shoulder-strike {
+  35% { transform: translateX(5%) rotate(4deg); }
+  100% { transform: none; }
+}
 
 @keyframes snap-print {
   14%, 69% { opacity: 1; transform: rotate(-12deg); }
@@ -99,13 +75,17 @@
 
 .map-traveler { display: flex; align-items: center; gap: .5rem; }
 .map-traveler .hero-avatar { width: 2.1rem; }
-.hero-reply, .hero-dossier { display: flex; gap: .8rem; align-items: center; }
-.hero-reply { padding: .6rem 0 .75rem; border-top: 1px dashed var(--line); font-size: .91rem; }
+.hero-reply { display: flex; gap: .8rem; align-items: center; padding: .6rem 0 .75rem; border-top: 1px dashed var(--line); font-size: .91rem; }
 .hero-reply strong { display: block; color: #614454; }
-.hero-dossier { padding: .85rem 0 .5rem; }
-.hero-dossier .hero-avatar { width: clamp(4.4rem, 20vw, 6.25rem); }
-.hero-dossier .ledger-stats { padding: 0; margin-bottom: .3rem; }
+.dossier-portrait { margin-block: .35rem .6rem; border: 1px solid #968778; }
+.dossier-portrait .hero-portrait { aspect-ratio: 4 / 3; }
+.dossier-portrait .hero-photo { width: 100%; height: 100%; object-fit: cover; object-position: 48% 20%; }
+@media (max-width: 38rem) {
+  .dossier-portrait { margin: 0; }
+  .dossier-portrait .hero-portrait { aspect-ratio: 1; }
+}
 .battle-reply {
+  margin-top: .55rem;
   border-inline-start: 2px solid #99738a;
   padding-inline-start: .55rem;
   color: #634653;

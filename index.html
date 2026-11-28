@@ -19,8 +19,9 @@
     <div class="binding-inner">
       <div class="wordmark"><span class="book-seal" aria-hidden="true">郡</span>爱慕杰修仙志</div>
       <nav aria-label="行旅手册">
-        <button type="button" id="nav-bag">人物行囊</button>
-        <button type="button" id="nav-journal">郡中纪事</button>
+        <button type="button" id="nav-character" aria-haspopup="dialog">人物</button>
+        <button type="button" id="nav-bag" aria-haspopup="dialog">背包</button>
+        <button type="button" id="nav-journal" aria-haspopup="dialog">郡中纪事</button>
         <button type="button" id="nav-clear" aria-haspopup="dialog" aria-keyshortcuts="Shift+Delete" title="清除当前存档（Shift + Delete）">清除存档</button>
       </nav>
     </div>
@@ -80,61 +81,41 @@
   </main>
   <main class="game" id="battle-view" hidden>
     <header class="case-header">
-      <p class="masthead"><button type="button" id="leave-battle">← 回山河图</button><span>指令回合战</span></p>
+      <p class="masthead"><button type="button" id="leave-battle">← 回山河图</button><span id="battle-place"></span></p>
       <h1 id="case-title" tabindex="-1"></h1>
       <p class="premise" id="case-premise"></p>
     </header>
 
     <div class="battle">
-      <section class="arena" aria-label="战况">
-        <div class="arena-art" id="arena-art">
-          <span class="arena-label" id="round-number">第 1 回合</span>
-          <span class="arena-label location" id="battle-place"></span>
-          <figure class="player-fighter photo-fighter">
-            <div class="hero-stage" data-hero-art aria-hidden="true"><span class="snap-mark">啪</span></div>
-            <figcaption>灭霸</figcaption>
-          </figure>
-          <img class="furnace" id="furnace-art" loading="lazy" src="art/concepts/attendance-furnace.png" width="1254" height="1254" alt="青铜丹炉的侧面用红绳绑着一台考勤机">
-          <span class="furnace-effect" aria-hidden="true"></span>
-        </div>
-        <div class="enemy">
-          <div class="enemy-name">
-            <h2 id="enemy-name"></h2>
-            <p><span id="enemy-meter-label">外壳</span> <strong id="armor-value">6</strong> / <span id="armor-max">6</span></p>
-          </div>
-          <div id="armor-meter" class="meter armor-meter" aria-hidden="true"></div>
-        </div>
-      </section>
+      <div class="vitals" role="group" aria-label="对战双方">
+        <section class="vital ally" aria-labelledby="player-name">
+          <div class="vital-heading"><h2 id="player-name">灭霸</h2><span id="battle-realm"></span></div>
+          <p class="vital-value">体力 <strong id="health-value"></strong> / <span id="health-max"></span></p>
+          <div class="meter health-meter" id="health-meter" aria-hidden="true"></div>
+        </section>
+        <section class="vital enemy" aria-labelledby="enemy-name">
+          <div class="vital-heading"><h2 id="enemy-name"></h2></div>
+          <p class="vital-value"><span id="enemy-meter-label">架势</span> <strong id="armor-value"></strong> / <span id="armor-max"></span></p>
+          <div class="meter armor-meter" id="armor-meter" aria-hidden="true"></div>
+        </section>
+      </div>
+
+      <div class="arena-art" id="arena-art" role="img" aria-label="灭霸与对手对阵">
+        <div class="player-fighter"><div class="hero-stage" data-hero-art aria-hidden="true"><span class="snap-mark">啪</span></div></div>
+        <img class="furnace" id="furnace-art" loading="lazy" src="art/concepts/attendance-furnace.png" width="1254" height="1254" alt="">
+        <span class="furnace-effect" aria-hidden="true"></span>
+      </div>
 
       <section class="dispatch" aria-label="选择战斗指令">
-        <div class="announcement" id="announcement" data-tone="warning">
-          <p class="announcement-label" id="announcement-label">丹炉预告</p>
-          <h2 id="announcement-title">喷扣分符</h2>
-          <p id="announcement-description">命中会扣 3 点体力，可以用响指打断。</p>
+        <div class="announcement" id="announcement" data-tone="neutral">
+          <div class="announcement-heading"><span class="announcement-label" id="announcement-label"></span><h2 id="announcement-title"></h2></div>
+          <p id="announcement-description"></p>
         </div>
-
-        <section class="player" aria-labelledby="player-name">
-          <h2 id="player-name">灭霸</h2>
-          <div class="player-stats">
-            <div>
-              <dl>
-                <dt>体力</dt>
-                <dd><strong id="health-value">5</strong> / <span id="health-max">5</span></dd>
-              </dl>
-              <div class="meter health-meter" id="health-meter" aria-hidden="true"></div>
-            </div>
-            <div>
-              <dl>
-                <dt>灵力</dt>
-                <dd><strong id="spirit-value">2</strong> / <span id="spirit-max">2</span></dd>
-              </dl>
-              <div class="meter spirit-meter" id="spirit-meter" aria-hidden="true"></div>
-            </div>
-          </div>
-        </section>
-        <p id="battle-reply" class="battle-reply"></p>
-
+        <div class="command-heading"><h2>招式</h2><span id="round-number"></span><p>灵力 <strong id="spirit-value"></strong> / <span id="spirit-max"></span></p></div>
         <div class="commands" id="commands"></div>
+        <p id="battle-reply" class="battle-reply"></p>
+        <p id="duel-result" hidden></p>
+        <details class="match-details" id="duel-details" hidden><summary>查看双方属性</summary><p id="duel-attributes"></p></details>
       </section>
     </div>
 
@@ -144,8 +125,9 @@
     </section>
   </main>
   <dialog id="ledger" aria-labelledby="ledger-title">
-    <header class="ledger-head"><h2 id="ledger-title"></h2><button id="close-ledger" type="button">合上</button></header>
+    <header class="ledger-head"><h2 id="ledger-title" tabindex="-1"></h2><button id="close-ledger" type="button">合上</button></header>
     <div id="ledger-content"></div>
+    <p id="ledger-feedback" class="screen-reader" role="status"></p>
   </dialog>
   <dialog id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-warning">
     <h2 id="reset-title">清除当前存档？</h2>

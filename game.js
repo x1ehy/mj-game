@@ -6,27 +6,31 @@
   let state = World.fresh();
   let selected = state.place;
   let panel = "";
+  let bagCategory = "gear";
+  let bagItem = null;
   let lastSave = null;
   let preserveSave = false;
   let saveMessage = "";
 
   const isCount = n => Number.isSafeInteger(n) && n >= 0;
   function validSave(s) {
-    if (!s || ![1, 2].includes(s.version) || !Object.hasOwn(World.places, s.place) || !Object.hasOwn(World.deeds, s.deed)) return false;
+    if (!s || ![1, 2, 3].includes(s.version) || !Object.hasOwn(World.places, s.place) || !Object.hasOwn(World.deeds, s.deed)) return false;
     if (![s.day, s.stones, s.xp].every(isCount) || s.day < 1 || !s.inventory || !s.cleared) return false;
     if (!["trained", "debt", "introduced", "lesson", "broker"].every(key => typeof s[key] === "boolean")) return false;
     if (!Object.entries(s.inventory).every(([id, n]) => Object.hasOwn(World.items, id) && isCount(n))) return false;
     if (![null, "lid", "seal"].includes(s.equipped) || (s.equipped && !s.inventory[s.equipped])) return false;
     if (!["furnace", "sluice"].every(key => typeof s.cleared[key] === "boolean")) return false;
-    if (s.version === 2 && !WaterCase.valid(s)) return false;
+    if (s.version >= 2 && !WaterCase.valid(s)) return false;
     if (!Array.isArray(s.journal) || !s.journal.length || !s.journal.every(x => x && isCount(x.day) && typeof x.text === "string")) return false;
     const b = s.battle;
     if (b === null) return true;
+    const maxHealthOK = s.version === 3 ? b?.maxHealth === Encounters.attributes(s).maxHealth : [5, 7, 100, 140].includes(b?.maxHealth);
     return b && Object.hasOwn(Encounters.foes, b.id) && [b.round, b.health, b.maxHealth, b.spirit, b.maxSpirit, b.armor].every(isCount)
       && (b.snapReadyAt === undefined || isCount(b.snapReadyAt))
       && [b.sweepNext, b.counterReady].every(flag => flag === undefined || typeof flag === "boolean")
-      && b.round > 0 && [5, 7].includes(b.maxHealth) && [2, 3].includes(b.maxSpirit)
-      && b.health <= b.maxHealth && b.spirit <= b.maxSpirit && b.armor <= Encounters.foes[b.id].armor
+      && Encounters.validPlan(b) && (![5, 7].includes(b.maxHealth) || !b.duel)
+      && b.round > 0 && maxHealthOK && [2, 3].includes(b.maxSpirit)
+      && b.health <= b.maxHealth && b.spirit <= b.maxSpirit && b.armor <= Encounters.foes[b.id].armor / World.armorScale(s)
       && [null, "victory", "defeat"].includes(b.outcome) && Array.isArray(b.turns) && b.turns.length
       && b.turns.every(x => x && isCount(x.round) && typeof x.text === "string");
   }
@@ -153,33 +157,51 @@
     $("save-status").textContent = saveMessage;
   }
   function meter(stat, value, max) {
-    $(stat + "-value").textContent = value; $(stat + "-max").textContent = max;
-    $(stat + "-meter").replaceChildren(...Array.from({ length: max }, (_, i) => el("span", undefined, i < value ? "filled" : "")));
+    $(stat + "-value").textContent = value.toLocaleString("zh-CN");
+    $(stat + "-max").textContent = max.toLocaleString("zh-CN");
+    const fill = el("span", undefined, "filled");
+    fill.style.width = (100 * value / max) + "%";
+    $(stat + "-meter").replaceChildren(fill);
   }
   function renderBattle() {
-    const b = state.battle, foe = Encounters.foes[b.id], move = Encounters.intent(b);
+    const b = state.battle, foe = Encounters.foes[b.id], info = Encounters.forecast(b, state);
     const won = b.outcome === "victory", lost = b.outcome === "defeat";
     $("case-title").textContent = foe.caseTitle; $("case-premise").textContent = foe.intro;
+    $("battle-realm").textContent = World.realm(state);
+    $("arena-art").setAttribute("aria-label", `左侧是灭霸，右侧是${foe.title}。`);
     $("arena-art").dataset.foe = b.id; $("arena-art").dataset.effect = b.effect;
     const mood = won || b.effect === "interrupt" ? "smug" : lost || b.effect === "penalty" ? "hurt" : "steady";
     $("arena-art").dataset.mood = mood;
     const remark = won ? "这回谁签字？我手腾不开。" : lost ? "先歇一会儿。别写我旷课。" :
       b.counterReady ? "打我盖上了。现在轮到我还盖。" :
       b.effect === "interrupt" ? "这一步先免了。你接着念。" :
-      b.health <= 2 ? "等会儿，我领子都被你打歪了。" : "";
+      b.health <= b.maxHealth * .4 ? "等会儿，我领子都被你打歪了。" : "";
     $("battle-reply").textContent = remark ? `灭霸：「${remark}」` : "";
     $("battle-place").textContent = foe.place; $("enemy-name").textContent = foe.title;
     $("enemy-meter-label").textContent = b.id === "thor" ? "架势" : "外壳";
     $("furnace-art").hidden = b.id !== "furnace"; $("round-number").textContent = `第 ${b.round} 回合`;
-    meter("armor", b.armor, foe.armor); meter("health", b.health, b.maxHealth); meter("spirit", b.spirit, b.maxSpirit);
-    $("announcement").dataset.tone = b.outcome || (move.damage ? "warning" : "neutral");
-    $("announcement-label").textContent = won ? "胜利" : lost ? "战败" : "敌方预告";
-    $("announcement-title").textContent = won ? foe.victory : lost ? "灭霸先躺为敬" : move.title;
-    $("announcement-description").textContent = won ? World.victoryReport(b.id) : lost ? "可立即重试，或回到地图继续游历。" : move.hint;
+    meter("armor", b.armor, foe.armor); meter("health", b.health, b.maxHealth);
+    $("spirit-value").textContent = b.spirit; $("spirit-max").textContent = b.maxSpirit;
+    $("announcement").dataset.tone = b.outcome || (info.warning ? "warning" : "neutral");
+    $("announcement-label").textContent = won ? "胜利" : lost ? "战败" : info.label;
+    $("announcement-title").textContent = won ? foe.victory : lost ? "灭霸先躺为敬" : info.title;
+    $("announcement-description").textContent = won ? World.victoryReport(b.id) : lost ? "可立即重试，或回到地图继续游历。" : info.hint;
+    $("duel-details").hidden = !b.duel;
+    if (b.duel) {
+      const hero = Encounters.attributes(state);
+      $("duel-attributes").textContent = `灭霸　攻击 ${hero.attack} · 防御 ${hero.defense} · 身法 ${hero.speed}\n托尔　攻击 ${foe.attack} · 防御 ${foe.defense} · 身法 ${foe.speed}`;
+    }
+    const latest = b.turns[0];
+    $("duel-result").hidden = !b.duel || !latest.round;
+    $("duel-result").textContent = b.duel && latest.round ? `第 ${latest.round} 回合　${latest.text}` : "";
     let options = Encounters.commands(b, state);
     if (lost) options = [{ id: "retry", name: "重试战斗", desc: "体力与灵力恢复，重新读招。" }];
-    if (b.outcome) options.push({ id: "leave", name: "回到山河图", desc: won && foe.prize ? "掉落已收入行囊，可随时装备。" : "可在行囊换装，再次挑战。" });
-    $("commands").replaceChildren(...options.map((a,i) => actionButton(a,i === 0)));
+    if (b.outcome) options.push({ id: "leave", name: "回到山河图", desc: won && foe.prize ? "掉落已收入背包，回到山河图后可装备。" : "回去可在背包换装，再次挑战。" });
+    $("commands").replaceChildren(...options.map((a,i) => {
+      const button = actionButton(a, i === 0);
+      if (a.priority !== undefined) button.prepend(el("span", `优先度 ${a.priority > 0 ? "+" : ""}${a.priority}`, "move-priority"));
+      return button;
+    }));
     $("history-list").replaceChildren(...b.turns.map(x => {
       const li = el("li"); li.append(el("strong", x.round ? `第 ${x.round} 回合` : "开战"), el("p", x.text)); return li;
     }));
@@ -225,7 +247,7 @@
   function battleAction(id) {
     if (checkForNewerSave() || !World.fight(state, id)) return;
     const arena = $("arena-art");
-    arena.dataset.gesture = id;
+    arena.dataset.gesture = state.battle?.outcome === "defeat" ? "" : id;
     save(); render();
     if (state.battle) {
       announce(`${state.battle.turns[0].text} ${$("announcement-title").textContent}。`);
@@ -237,74 +259,228 @@
   $("commands").addEventListener("click", e => { const btn = e.target.closest("button"); if (btn) battleAction(btn.dataset.action); });
   $("leave-battle").addEventListener("click", () => battleAction("leave"));
   $("arena-art").addEventListener("animationend", e => {
-    if (e.animationName === "snap-print") delete $("arena-art").dataset.gesture;
+    if (["snap-print", "shoulder-strike"].includes(e.animationName)) delete $("arena-art").dataset.gesture;
   });
 
   function entry(title, note) {
     const li = el("li"); li.append(el("strong", title), el("small", note)); return li;
   }
-  function textButton(id, name) {
-    const b = el("button", name, "text-button"); b.type = "button"; b.dataset.ledger = id; return b;
+  function ledgerButton(id, name, className = "text-button") {
+    const button = el("button", name, className);
+    button.type = "button";
+    button.id = id;
+    return button;
   }
-  function renderLedger() {
-    const body = $("ledger-content");
-    body.replaceChildren();
-    $("ledger-title").textContent = panel === "bag" ? "人物行囊" : "郡中纪事";
-    if (panel === "bag") {
-      const dossier = el("div", undefined, "hero-dossier");
-      const portrait = el("span", undefined, "hero-avatar");
-      portrait.setAttribute("aria-hidden", "true");
-      portrait.append(heroTemplate.content.cloneNode(true));
-      const summary = el("div");
-      summary.append(el("p", `灭霸　·　${World.realm(state)}　·　${state.stones} 灵石`, "ledger-stats"),
-        el("p", state.trained ? "战斗体力 7、灵力 3，普通攻击威力 2。" : `修为 ${state.xp}。集齐 4 点修为和 1 株引气草，可突破至炼气中期。`, "ledger-note"));
-      dossier.append(portrait, summary);
-      body.append(dossier, el("h3", "随身物件"));
-      const list = el("ul", undefined, "ledger-list");
-      for (const [id, [name, desc]] of Object.entries(World.items)) {
-        const n = state.inventory[id]; if (!n) continue;
-        const li = entry(`${name} × ${n}${state.equipped === id ? " · 已装备" : ""}`, desc);
-        if (id === "seal" || id === "lid") {
-          const b = textButton(id, state.battle ? "交手结束后可换装" : state.equipped === id ? "收起法器" : "装备此物");
-          b.disabled = !!state.battle; li.append(b);
-        }
-        list.append(li);
-      }
-      if (!list.children.length) list.append(el("li", "布囊里只有几枚灵石。取得的凭证、草药和法器会放在这里。", "ledger-note"));
-      body.append(list, el("h3", "人物行踪"));
-      const people = el("ul", undefined, "ledger-list");
-      for (const [id, p] of Object.entries(World.people)) {
-        const today = World.places[World.locationOf(id, state.day, state)].name;
-        const tomorrow = World.places[World.locationOf(id, state.day+1, state)].name;
-        people.append(entry(`${p.name} · ${p.job}`, `${World.relation(state,id)}。今日在${today}，明日在${tomorrow}。`));
-      }
-      body.append(people); return;
+  const bagCategories = {
+    gear: { name: "法器", ids: ["lid", "seal"] },
+    material: { name: "材料", ids: ["herb"] },
+    evidence: { name: "凭证", ids: ["witness", "record", ...Object.keys(WaterCase.items)] },
+  };
+  const panelTitles = { character: "人物", bag: "背包", journal: "郡中纪事" };
+  const artifactName = id => id ? World.items[id][0] : "未装备";
+  const ownedItems = category => bagCategories[category].ids.filter(id => state.inventory[id] > 0);
+
+  function effectList(effects) {
+    const list = el("ul", undefined, "ledger-list technique-list");
+    for (const { name, desc } of effects) list.append(entry(name, desc));
+    return list;
+  }
+  function progressRow(label, count, goal) {
+    const row = el("div", undefined, "cultivation-row");
+    const caption = el("p");
+    caption.append(el("span", label), el("strong", `${count} / ${goal}`));
+    const progress = el("progress");
+    progress.max = goal;
+    progress.value = Math.min(count, goal);
+    progress.setAttribute("aria-label", label);
+    row.append(caption, progress);
+    return row;
+  }
+  function renderCharacter(body) {
+    const { maxHealth, maxSpirit, attack, defense, speed, technique } = Encounters.attributes(state);
+    const battle = state.battle;
+    const profile = el("section", undefined, "hero-dossier");
+    const portrait = el("div", undefined, "dossier-portrait");
+    portrait.setAttribute("aria-hidden", "true");
+    portrait.append(heroTemplate.content.cloneNode(true));
+    const identity = el("div", undefined, "dossier-name");
+    identity.append(el("h3", "灭霸"), el("p", World.realm(state)));
+    const stats = el("dl", undefined, "character-stats");
+    const values = [
+      [battle ? "体力" : "体力上限", battle ? `${battle.health} / ${battle.maxHealth}` : maxHealth],
+      [battle ? "灵力" : "灵力上限", battle ? `${battle.spirit} / ${battle.maxSpirit}` : maxSpirit],
+      ["攻击", attack], ["防御", defense], ["身法", speed], ["术法威力", technique],
+    ];
+    for (const [label, value] of values) {
+      const stat = el("div");
+      stat.append(el("dt", label), el("dd", value));
+      stats.append(stat);
     }
+    const cultivation = el("div", undefined, "cultivation");
+    const { xp, herbs } = World.breakthrough;
+    const herbCount = state.inventory.herb || 0;
+    if (state.trained) cultivation.append(el("p", `当前修为 ${state.xp}`, "ledger-note"));
+    else {
+      cultivation.append(el("h4", "突破至炼气中期"), progressRow("修为", state.xp, xp), progressRow("引气草", herbCount, herbs));
+      if (state.xp >= xp && herbCount >= herbs) cultivation.append(el("p", "可在地图的行动列表中突破。", "ledger-note"));
+    }
+    profile.append(el("p", "学宫档案", "field-label"), portrait, identity, stats, cultivation);
+
+    const training = el("section", undefined, "character-techniques");
+    const equipment = el("div", undefined, "dossier-equipment");
+    const label = el("p");
+    label.append(el("span", "当前法器", "field-label"), el("strong", artifactName(state.equipped)));
+    equipment.append(label, ledgerButton("dossier-bag", "查看背包"));
+    const { name, cooldown } = Encounters.snap;
+    training.append(equipment, el("h3", "战斗招式"), effectList([
+      { name: "普通攻击", desc: `攻击 + 招式威力 − 对手防御，保底为攻击的 5%。普攻威力 +0，抓到破绽再加 ${technique}。` },
+      { name, desc: `可打断符咒或蓄雷。免费，出手后冷却 ${cooldown} 回合。` },
+      ...(state.equipped === "lid" ? [] : [{ name: Encounters.stance.name + " · 试锤台", desc: Encounters.stance.desc }]),
+      ...Encounters.artifactEffects(state.equipped, state),
+    ]));
+    const layout = el("div", undefined, "character-layout");
+    layout.append(profile, training);
+    body.append(layout);
+  }
+  function gearColumn(label, id) {
+    const column = el("div", undefined, "gear-column");
+    column.append(el("p", label, "field-label"), el("strong", artifactName(id), "gear-name"));
+    if (id) column.append(effectList(Encounters.artifactEffects(id, state)));
+    return column;
+  }
+  function itemNote(id) {
+    if (id === "herb" && state.trained) return "在青瓦镇可换 2 灵石，也能用来还火箭的人情。";
+    if (id === "witness" || id === "record") {
+      const active = state.deed === "pending" || state.deed === "taken";
+      const next = active ? "带齐水脚收条和地册拓片，可到学宫处理田契。" : "田契争端已办结。";
+      return World.items[id][1] + next;
+    }
+    if (state.waterCase?.outcome && Object.hasOwn(WaterCase.items, id)) return "水案已落印，留作凭证。";
+    return World.items[id][1];
+  }
+  function renderBag(body) {
+    const summary = el("div", undefined, "pack-summary");
+    summary.append(el("p", `当前法器 · ${artifactName(state.equipped)}`), el("strong", `${state.stones} 灵石`));
+    const categories = el("div", undefined, "pack-categories");
+    categories.setAttribute("role", "group");
+    categories.setAttribute("aria-label", "物品类别");
+    for (const [id, { name }] of Object.entries(bagCategories)) {
+      const button = ledgerButton(`pack-category-${id}`, undefined, "pack-category");
+      button.dataset.category = id;
+      button.setAttribute("aria-pressed", String(bagCategory === id));
+      button.append(el("span", name), el("span", ownedItems(id).length, "pack-count"));
+      categories.append(button);
+    }
+    body.append(summary, categories);
+
+    const ids = ownedItems(bagCategory);
+    if (!ids.includes(bagItem)) bagItem = ids[0] ?? null;
+    if (!bagItem) {
+      const empty = { gear: "暂无随身法器。战斗掉落的法器会收在这里。", material: "暂无材料。可去废渠采引气草。", evidence: "暂无凭证。游历取得的凭证会收在这里。" };
+      body.append(el("p", empty[bagCategory], "pack-empty ledger-note"));
+      return;
+    }
+    const list = el("ul", undefined, "pack-items");
+    for (const id of ids) {
+      const li = el("li");
+      const button = ledgerButton(`pack-item-${id}`, undefined, "pack-item");
+      button.dataset.item = id;
+      button.setAttribute("aria-pressed", String(id === bagItem));
+      button.setAttribute("aria-controls", "pack-detail");
+      button.append(el("strong", World.items[id][0]), el("span", `×${state.inventory[id]}`));
+      if (id === state.equipped) button.append(el("small", "已装备"));
+      li.append(button);
+      list.append(li);
+    }
+    const detail = el("section", undefined, "pack-detail");
+    detail.id = "pack-detail";
+    const title = el("h3", World.items[bagItem][0]);
+    title.id = "pack-item-title";
+    title.tabIndex = -1;
+    detail.setAttribute("aria-labelledby", title.id);
+    detail.append(title, el("p", `持有 ${state.inventory[bagItem]}${bagItem === "herb" ? " 株" : " 件"}`, "ledger-note"));
+    if (bagCategory === "gear") {
+      const equipped = bagItem === state.equipped;
+      const preview = el("div", undefined, "gear-preview");
+      if (!equipped) preview.append(gearColumn("当前", state.equipped));
+      preview.append(gearColumn(equipped ? "已装备" : "换装后", bagItem));
+      const action = ledgerButton("pack-equip", equipped ? "卸下法器" : state.equipped ? "换上法器" : "装备法器", "pack-equip");
+      action.disabled = !!state.battle;
+      detail.append(preview, action);
+      if (state.battle) detail.append(el("p", "回到山河图后可换装。", "ledger-note"));
+    } else detail.append(el("p", itemNote(bagItem), "pack-usage"));
+    const layout = el("div", undefined, "pack-layout");
+    layout.append(list, detail);
+    body.append(layout);
+  }
+  function renderJournal(body) {
     body.append(el("p", `第 ${state.day} 日 · ${World.deeds[state.deed][0]} · ${World.places[state.place].name}`, "ledger-stats"),
       el("p", World.deeds[state.deed][1], "ledger-note"));
     const note = WaterCase.notice(state);
     if (note) body.append(el("h3", WaterCase.title), el("p", `${note.status} · ${note.date}。${note.text}`, "ledger-note"));
+    const people = el("ul", undefined, "ledger-list");
+    for (const [id, p] of Object.entries(World.people)) {
+      const today = World.places[World.locationOf(id, state.day, state)].name;
+      const tomorrow = World.places[World.locationOf(id, state.day + 1, state)].name;
+      people.append(entry(`${p.name} · ${p.job}`, `${World.relation(state, id)}。今日在${today}，明日在${tomorrow}。`));
+    }
     const list = el("ol", undefined, "ledger-list");
     for (const line of state.journal) {
       const li = el("li"); li.append(el("strong", `第 ${line.day} 日`, "log-day"), document.createTextNode(line.text)); list.append(li);
     }
-    body.append(list, el("p", saveMessage, "ledger-note"));
-    body.append(textButton("ask-reset", "另开新局"));
+    body.append(el("h3", "人物行踪"), people, el("h3", "游历记录"), list, el("p", saveMessage, "ledger-note"));
+    body.append(ledgerButton("ask-reset", "另开新局"));
   }
-  function openLedger(kind) {
-    panel = kind; renderLedger(); $("ledger").showModal(); $("ledger").scrollTop = 0;
+  function renderLedger() {
+    const body = $("ledger-content");
+    const active = body.contains(document.activeElement) ? document.activeElement.id : "";
+    body.replaceChildren();
+    $("ledger-title").textContent = panelTitles[panel];
+    $("ledger").dataset.panel = panel;
+    if (panel === "character") renderCharacter(body);
+    else if (panel === "bag") renderBag(body);
+    else renderJournal(body);
+    if (active) {
+      const replacement = $(active);
+      (replacement && !replacement.disabled ? replacement : $("close-ledger")).focus({ preventScroll: true });
+    }
+  }
+  function openLedger(kind, category) {
+    panel = kind;
+    if (kind === "bag") {
+      bagCategory = category || Object.keys(bagCategories).find(id => ownedItems(id).length) || "gear";
+      bagItem = bagCategory === "gear" ? state.equipped : null;
+    }
+    $("ledger-feedback").textContent = "";
+    renderLedger();
+    const ledger = $("ledger");
+    if (!ledger.open) ledger.showModal();
+    ledger.scrollTop = 0;
+    $("ledger-title").focus({ preventScroll: true });
   }
   $("ledger-content").addEventListener("click", e => {
-    const btn = e.target.closest("[data-ledger]"); if (!btn) return;
-    const id = btn.dataset.ledger;
+    const btn = e.target.closest("button"); if (!btn) return;
     if (checkForNewerSave()) { renderLedger(); return; }
-    if (id === "ask-reset") { openReset("restart"); return; }
-    if (World.equip(state, id)) {
+    if (btn.id === "ask-reset") { openReset("restart"); return; }
+    if (btn.id === "dossier-bag") { openLedger("bag", "gear"); return; }
+    if (btn.dataset.category) {
+      bagCategory = btn.dataset.category;
+      bagItem = bagCategory === "gear" ? state.equipped : null;
+      renderLedger();
+    } else if (btn.dataset.item) {
+      bagItem = btn.dataset.item;
+      renderLedger();
+      if (matchMedia("(max-width: 38rem)").matches) {
+        const title = $("pack-item-title");
+        title.focus({ preventScroll: true });
+        title.scrollIntoView({ block: "start" });
+      }
+    } else if (btn.id === "pack-equip" && World.equip(state, bagItem)) {
       save(); render(); renderLedger();
-      $("ledger-content").querySelector(`[data-ledger="${id}"]`)?.focus({ preventScroll: true });
-      announce(state.journal[0].text);
+      $("ledger-feedback").textContent = state.journal[0].text;
     }
   });
+  $("nav-character").addEventListener("click", () => openLedger("character"));
   $("nav-bag").addEventListener("click", () => openLedger("bag"));
   $("nav-journal").addEventListener("click", () => openLedger("journal"));
   $("close-ledger").addEventListener("click", () => $("ledger").close());

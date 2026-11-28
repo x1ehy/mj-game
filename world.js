@@ -19,7 +19,7 @@ const World = ((combat, water) => {
     record: ["地册拓片", "学宫旧档里的底册。和水脚收条一对，田主便有名有姓。"],
     herb: ["引气草", "突破需 1 株。在青瓦镇可换 2 灵石，也能用来还火箭的人情。"],
     seal: ["分水令", "引水诀耗 1 灵力，攻击并打断符咒或蓄雷。托尔的贴地横锤仍会落下。"],
-    lid: ["裂纹炉盖", "每场首次受击少扣 2 点体力。可主动架盖挡重击，下一回合反震。"],
+    lid: ["裂纹炉盖", "每场首次受击最多抵消体力上限的四成。可主动架盖挡重击，下一回合反震。"],
   };
   const deeds = {
     pending: ["待交割", "仙盟把灭建国的灵田登记成了无主地，第五天由买家接手。"],
@@ -28,8 +28,9 @@ const World = ((combat, water) => {
     taken: ["买家接管", "管事在田头支起收租摊。可以在村里签佃约，也能带两份凭证到学宫申诉。"],
   };
   const boundary = 5;
+  const breakthrough = { xp: 4, herbs: 1 };
   function fresh() {
-    return { version: 2, day: 1, place: "village", deed: "pending", stones: 3, xp: 0, waterCase: null,
+    return { version: 3, day: 1, place: "village", deed: "pending", stones: 3, xp: 0, waterCase: null,
       trained: false, equipped: null, debt: false, introduced: false, lesson: false,
       broker: false, inventory: {}, cleared: { furnace: false, sluice: false }, battle: null,
       journal: [{ day: 1, text: "灭霸回村那天，告示上写着「无主灵田一亩」。灭建国正蹲在那亩田里拔草。" }] };
@@ -40,14 +41,27 @@ const World = ((combat, water) => {
     s.journal.unshift(entry);
     if (s.journal.length > 60) s.journal.pop();
   }
+  function armorScale(s) {
+    if (s.version === 3) return 1;
+    return [5, 7].includes(s.battle.maxHealth) ? 2000 : 100;
+  }
   function upgradeSave(s) {
-    if (s.version !== 1) return s;
-    s.version = 2;
-    s.waterCase = null;
-    if (s.cleared.sluice) {
-      water.start(s);
-      log(s, "学宫今日才收到水表停摆的报修单。明日到灭家村田头开听，旧账从今天起公示。");
+    if (s.version === 3) return s;
+    const b = s.battle;
+    if (b) {
+      const fullHealth = combat.attributes(s).maxHealth;
+      b.armor *= armorScale(s);
+      b.health = Math.round(b.health * fullHealth / b.maxHealth);
+      b.maxHealth = fullHealth;
     }
+    if (s.version === 1) {
+      s.waterCase = null;
+      if (s.cleared.sluice) {
+        water.start(s);
+        log(s, "学宫今日才收到水表停摆的报修单。明日到灭家村田头开听，旧账从今天起公示。");
+      }
+    }
+    s.version = 3;
     return s;
   }
   function passDay(s) {
@@ -172,9 +186,11 @@ const World = ((combat, water) => {
       add("train", "就地修炼", "耗时 1 日，修为增加 2。", () => {
         s.xp += 2; passDay(s); log(s, `吐纳一周天，修为增加 2。现有 ${s.xp} 点修为。`);
       });
-      if (s.xp >= 4) add("advance", "冲击炼气中期", "需 4 修为、1 株引气草。战斗体力、灵力和出招威力提升。", () => {
-        s.xp -= 4; gain(s, "herb", -1); s.trained = true; log(s, "灭霸迈入炼气中期。战斗体力升至 7、灵力升至 3，普通攻击也更重了。");
-      }, !s.inventory.herb);
+      if (s.xp >= breakthrough.xp) add("advance", "冲击炼气中期", `需 ${breakthrough.xp} 修为、${breakthrough.herbs} 株引气草。体力、灵力、攻击、防御和身法提升。`, () => {
+        s.xp -= breakthrough.xp; gain(s, "herb", -breakthrough.herbs); s.trained = true;
+        const { maxHealth, maxSpirit } = combat.attributes(s);
+        log(s, `灭霸迈入炼气中期。战斗体力升至 ${maxHealth}、灵力升至 ${maxSpirit}，普通攻击也更重了。`);
+      }, (s.inventory.herb || 0) < breakthrough.herbs);
     }
     add("wait", "歇脚一日", "时过一日，看看明日谁会路过。", () => { passDay(s); log(s, `在${places[s.place].name}歇过一夜。`); });
   }
@@ -193,7 +209,8 @@ const World = ((combat, water) => {
     localOrders[s.place]?.(s, add);
     const inspection = s.place === "canal" && s.waterCase?.outcome;
     const foe = inspection ? "thor" : places[s.place].encounter;
-    if (foe && (inspection || !s.cleared[foe])) add("fight", combat.foes[foe].challenge, inspection ? "免费切磋，可重复挑战。开打前可在行囊里换法器。" : "指令回合战，可中途撤走。", () => { s.battle = combat.start(foe, s); });
+    if (foe && (inspection || !s.cleared[foe])) add("fight", combat.foes[foe].challenge, inspection ? "免费切磋，可重复挑战。开打前可在背包里换法器。" : "指令回合战，可中途撤走。", () => { s.battle = combat.start(foe, s); });
+    if (s.place === "canal" && !inspection) add("spar", "上试锤台单挑托尔", "切磋不耗郡历。双方各选一招，按优先度与身法交手。", () => { s.battle = combat.start("thor", s); });
     dailyOrders(s, add);
     return result;
   }
@@ -218,7 +235,7 @@ const World = ((combat, water) => {
     if (id === "thor") return "托尔在验收单上盖了个锤印。回到废渠，可换件法器再来切磋。";
     return id === "sluice"
       ? "功德水表停摆。你拾到分水令，开渠后灵谷增产。学宫送来一张修闸账单，明日到灭家村开听。"
-      : "考勤丹炉散了架。裂纹炉盖已收入行囊，可装备挡伤。";
+      : "考勤丹炉散了架。裂纹炉盖已收入背包，可装备挡伤。";
   }
   function fight(s, action) {
     const b = s.battle;
@@ -240,7 +257,7 @@ const World = ((combat, water) => {
     if (b.outcome === "defeat") log(s, `灭霸败给${combat.foes[b.id].title}，可以重整旗鼓或回地图。`);
     return true;
   }
-  return { places, people, items, deeds, boundary, fresh, realm, relation, describe, upgradeSave,
+  return { places, people, items, deeds, boundary, breakthrough, fresh, realm, relation, describe, armorScale, upgradeSave,
     locationOf, orders, act, travel, equip, fight, victoryReport };
 })(typeof module !== "undefined" && module.exports ? require("./encounters.js") : Encounters,
    typeof module !== "undefined" && module.exports ? require("./water-case.js") : WaterCase);

@@ -67,24 +67,116 @@ button:hover:not(:disabled) { text-decoration-color: currentColor; }
 .atlas-footer { display: flex; flex-wrap: wrap; padding: 1rem 0 2rem; font-size: .83rem; color: var(--muted); }
 .game { padding-top: 1.2rem; }
 .masthead button { padding: 0; color: var(--bronze); }
-.arena-art[data-foe="sluice"] { background-image: url("art/locations/sluice.webp"); background-position: center 59%; }
-.arena-art[data-foe="thor"] { background-image: url("art/locations/thor-inspection.webp"); background-position: center 53%; }
+.arena-art[data-foe="sluice"] { --scene: url("art/locations/sluice.webp"); background-position: right 45%; }
+.arena-art[data-foe="thor"] { --scene: url("art/locations/thor-inspection.webp"); background-position: right 6%; }
 .arena-art[data-foe="sluice"]:is([data-effect="penalty"],[data-effect="interrupt"]) .furnace-effect { width: 1.35rem; height: 1.35rem; border: 4px double #b78a48; border-radius: 50%; background: #4f432d; }
 dialog { border: 1px solid var(--control-line); border-top: 4px solid var(--bronze); padding: 0 1.35rem 1.35rem;
   background: var(--panel); color: var(--ink); width: min(36rem,calc(100% - 2rem)); max-height: 82dvh; overflow: auto; }
 dialog::backdrop { background: rgb(23 31 25 / .6); }
 .ledger-head { background: var(--panel); padding: .65rem 0; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 1; }
 .ledger-head h2 { font-size: 1.55rem; }
+#ledger-title:focus, #pack-item-title:focus { outline: none; }
 .ledger-head button,.text-button { color: var(--bronze); font-weight: 700; }
 #ledger-content h3 { margin: 1.2rem 0 .4rem; font-size: 1rem; }
 .ledger-list { list-style: none; margin: 0; padding: 0; }
 .ledger-list li { padding: .5rem 0; border-bottom: 1px solid var(--line); }
 .ledger-list strong { margin-right: .6rem; }
 .ledger-list small { display: block; color: var(--muted); font-size: .86rem; }
-.ledger-list .text-button { display: block; padding: 0; }
 .ledger-stats { padding: .8rem 0; color: var(--bronze); font-weight: 700; }
 .ledger-note { color: var(--muted); font-size: .9rem; }
 .log-day { color: var(--seal); font: 700 .9rem var(--font-title); }
+#ledger { scroll-padding-block: 4.5rem .6rem; }
+#ledger:is([data-panel="character"], [data-panel="bag"]) { width: min(49rem, calc(100% - 2rem)); }
+.character-layout {
+  display: grid;
+  grid-template-columns: minmax(13rem, 2fr) minmax(0, 3fr);
+  align-items: start;
+  gap: clamp(1rem, 3vw, 1.75rem);
+  padding-top: 1rem;
+}
+.hero-dossier { padding: .85rem; border: 1px solid var(--line); background: var(--paper); }
+.dossier-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .7rem; }
+#ledger-content .dossier-name h3 { margin: 0; font: 700 1.8rem var(--font-title); }
+.dossier-name p { color: var(--seal); font-size: .9rem; font-weight: 700; }
+.character-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: .65rem 0;
+  gap: .5rem;
+  margin-top: .65rem;
+  border-block: 1px solid var(--line);
+}
+.character-stats dt { color: var(--muted); font-size: .8rem; }
+.character-stats dd { font: 700 1.2rem/1.4 var(--font-ui); font-variant-numeric: tabular-nums; }
+.cultivation { padding-top: .65rem; }
+.cultivation h4 { margin: 0 0 .4rem; font-size: .9rem; }
+.cultivation-row { margin-top: .45rem; }
+.cultivation-row p { display: flex; justify-content: space-between; gap: .5rem; font-size: .84rem; }
+.cultivation-row strong { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cultivation-row progress { display: block; width: 100%; height: .35rem; margin-top: .24rem; appearance: none; border: 0; background: var(--line); }
+.cultivation-row progress::-webkit-progress-bar { background: var(--line); }
+.cultivation-row progress::-webkit-progress-value { background: var(--bronze); }
+.cultivation-row progress::-moz-progress-bar { background: var(--bronze); }
+.cultivation > p { margin-top: .5rem; }
+.dossier-equipment {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .65rem;
+  padding: .65rem .9rem;
+  border-inline-start: 3px solid var(--bronze);
+  background: var(--bronze-pale);
+}
+.dossier-equipment strong { display: block; }
+.dossier-equipment button { flex: none; }
+.technique-list li { padding-block: .55rem; }
+.technique-list li:last-child { border-bottom: 0; }
+.technique-list strong { margin: 0; }
+.pack-summary { display: flex; align-items: baseline; flex-wrap: wrap; justify-content: space-between; gap: .2rem .6rem; padding: .8rem 0; font-size: .88rem; }
+.pack-summary strong { color: var(--bronze); overflow-wrap: anywhere; }
+.pack-categories { display: flex; gap: .5rem; border-bottom: 1px solid var(--line); }
+.pack-category, .pack-item, .pack-equip {
+  min-height: 2.75rem;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  font: inherit;
+  cursor: pointer;
+}
+.pack-category { padding: .45rem .7rem; border-bottom: 0; }
+.pack-category[aria-pressed="true"] { background: var(--bronze-pale); color: var(--bronze); border-color: var(--control-line); font-weight: 700; }
+.pack-count { margin-inline-start: .45em; color: var(--muted); font-size: .82rem; font-variant-numeric: tabular-nums; }
+.pack-layout { display: grid; grid-template-columns: minmax(10rem, 1fr) minmax(0, 2.35fr); gap: 1.25rem; padding-top: .9rem; }
+.pack-items { display: grid; align-content: start; gap: .42rem; margin: 0; padding: 0; list-style: none; }
+.pack-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .12rem .45rem;
+  width: 100%;
+  padding: .55rem .65rem;
+  border-inline-start-width: 3px;
+  font-size: .9rem;
+  text-align: start;
+}
+.pack-item[aria-pressed="true"] { background: var(--paper); border-inline-start-color: var(--bronze); }
+.pack-item:hover, .pack-category:hover { border-color: var(--bronze); }
+.pack-item span { color: var(--muted); font-size: .82rem; overflow-wrap: anywhere; max-width: 5rem; text-align: end; }
+.pack-item small { grid-column: 1 / -1; color: var(--bronze); font-size: .78rem; }
+.pack-detail { min-width: 0; border-inline-start: 1px solid var(--line); padding-inline-start: 1.25rem; }
+#ledger-content .pack-detail h3 { margin: 0; font: 700 1.45rem/1.35 var(--font-title); }
+.gear-preview { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin: .7rem 0; border: 1px solid var(--line); background: var(--paper); }
+.gear-column { min-width: 0; padding: .7rem; }
+.gear-column + .gear-column { border-inline-start: 1px solid var(--line); background: var(--bronze-pale); }
+.gear-name { display: block; margin: .17rem 0 .25rem; }
+.gear-column .technique-list li { padding-block: .38rem; }
+.gear-column .technique-list strong { display: block; font-size: .86rem; }
+.gear-column .technique-list small { font-size: .81rem; }
+.pack-equip { padding-inline: .95rem; color: var(--panel); background: #2c4638; border-color: #2c4638; font-weight: 700; }
+.pack-equip:hover:not(:disabled) { background: var(--bronze); }
+.pack-equip:disabled { color: var(--muted); background: var(--paper); border-color: var(--line); cursor: default; }
+.pack-equip + p { margin-top: .35rem; }
+.pack-usage, .pack-empty { padding-top: .7rem; }
 #reset-dialog { max-width: 27rem; padding: 1.25rem; border-top-color: var(--seal); }
 #reset-title { font: 700 1.5rem var(--font-title); margin: 0 0 .6rem; }
 #reset-error { color: var(--seal); margin-top: .6rem; }
@@ -100,6 +192,15 @@ dialog::backdrop { background: rgb(23 31 25 / .6); }
   .atlas-header { align-items: start; }
   .almanac { padding-left: .65rem; }
   .almanac strong { font-size: 1.25rem; }
+}
+@media (max-width: 38rem) {
+  #ledger { padding-inline: .9rem; }
+  .character-layout, .pack-layout { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+  .hero-dossier { display: grid; grid-template-columns: minmax(5rem, 36%) minmax(0, 1fr); gap: .35rem .65rem; align-items: center; }
+  .hero-dossier > .field-label, .character-stats, .cultivation { grid-column: 1 / -1; }
+  .character-stats { margin-top: .25rem; }
+  .cultivation { padding-top: .15rem; }
+  .pack-detail { border-inline-start: 0; border-top: 1px solid var(--line); padding: .75rem 0 0; }
 }
 @media (max-width: 28rem) {
   .water-notice { grid-template-columns: 1fr; gap: 0; }
