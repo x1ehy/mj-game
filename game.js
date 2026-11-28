@@ -8,26 +8,35 @@
   let panel = "";
   let bagCategory = "gear";
   let bagItem = null;
+  let bagSlot = "";
   let lastSave = null;
   let preserveSave = false;
   let saveMessage = "";
   let playback = null;
+  let crossing = null;
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
   const isCount = n => Number.isSafeInteger(n) && n >= 0;
   function validSave(s) {
-    if (!s || ![1, 2, 3].includes(s.version) || !Object.hasOwn(World.places, s.place) || !Object.hasOwn(World.deeds, s.deed)) return false;
+    if (!s || ![1, 2, 3, 4].includes(s.version) || !Object.hasOwn(World.places, s.place) || !Object.hasOwn(World.deeds, s.deed)) return false;
     if (![s.day, s.stones, s.xp].every(isCount) || s.day < 1 || !s.inventory || !s.cleared) return false;
     if (!["trained", "debt", "introduced", "lesson", "broker"].every(key => typeof s[key] === "boolean")) return false;
     if (!Object.entries(s.inventory).every(([id, n]) => Object.hasOwn(World.items, id) && isCount(n))) return false;
-    if (s.equipped !== null && (typeof s.equipped !== "string" || !Object.hasOwn(Encounters.gear, s.equipped) || !s.inventory[s.equipped])) return false;
+    if (s.version === 4) {
+      if (!s.equipped || typeof s.equipped !== "object" || Array.isArray(s.equipped)
+        || Object.keys(s.equipped).length !== Object.keys(Encounters.slots).length) return false;
+      for (const slot of Object.keys(Encounters.slots)) {
+        const id = s.equipped[slot];
+        if (id !== null && (typeof id !== "string" || Encounters.gear[id]?.slot !== slot || !s.inventory[id])) return false;
+      }
+    } else if (s.equipped !== null && (typeof s.equipped !== "string" || !Object.hasOwn(Encounters.gear, s.equipped) || !s.inventory[s.equipped])) return false;
     if (!["furnace", "sluice"].every(key => typeof s.cleared[key] === "boolean")) return false;
     if (s.version >= 2 && !WaterCase.valid(s)) return false;
     if (!FirstRain.valid(s)) return false;
     if (!Array.isArray(s.journal) || !s.journal.length || !s.journal.every(x => x && isCount(x.day) && typeof x.text === "string")) return false;
     const b = s.battle;
     if (b === null) return true;
-    const maxHealthOK = s.version === 3 ? b?.maxHealth === Encounters.attributes(s).maxHealth : [5, 7, 100, 140].includes(b?.maxHealth);
+    const maxHealthOK = s.version >= 3 ? b?.maxHealth === Encounters.attributes(s, s.version === 3 ? Encounters.loadout(s.equipped) : s.equipped).maxHealth : [5, 7, 100, 140].includes(b?.maxHealth);
     return b && Object.hasOwn(Encounters.foes, b.id) && [b.round, b.health, b.maxHealth, b.spirit, b.maxSpirit, b.armor].every(isCount)
       && (b.snapReadyAt === undefined || isCount(b.snapReadyAt))
       && [b.sweepNext, b.counterReady].every(flag => flag === undefined || typeof flag === "boolean")
@@ -127,6 +136,17 @@
       $("hearing-reply").textContent = line;
     }
   }
+  function layoutTrail() {
+    const line = $("route-trail");
+    line.hidden = state.place === selected || !!state.battle;
+    if (line.hidden || crossing) return;
+    const from = World.places[state.place], to = World.places[selected];
+    const map = $("atlas-map");
+    const dx = map.clientWidth * (to.x - from.x) / 100, dy = map.clientHeight * (to.y - from.y) / 100;
+    Object.assign(line.style, { left: from.x + "%", top: from.y + "%",
+      width: Math.hypot(dx, dy) + "px", transform: `rotate(${Math.atan2(dy, dx)}rad)` });
+  }
+  new ResizeObserver(layoutTrail).observe($("atlas-map"));
   function renderAtlas() {
     const here = selected === state.place;
     const place = World.places[selected];
@@ -136,9 +156,25 @@
     const visitors = Object.entries(World.people).filter(([id]) => World.locationOf(id, visitDay, preview) === selected);
     $("day").textContent = `第 ${state.day} 日`;
     $("map-position").textContent = `灭霸在${World.places[state.place].name}`;
+    const quest = Quests.tracked(Quests.list(state), state.trackedQuest);
+    const origin = World.places[state.place];
+    layoutTrail();
+    $("traveler").style.left = origin.x + "%";
+    $("traveler").style.top = origin.y + "%";
+    const route = $("route-note");
+    route.hidden = here;
+    route.style.left = place.x + "%";
+    route.style.top = place.y + "%";
+    route.textContent = FirstRain.ferry(state, selected) ? "乘索 · 当日抵达" : `赶路 1 日 · 第 ${visitDay} 日抵达`;
+    $("hud-realm").textContent = World.realm(state);
+    const heroStats = Encounters.attributes(state);
+    $("hud-cultivation").textContent = `修为 ${state.xp}${state.trained ? "" : " / " + World.breakthrough.xp}　灵石 ${state.stones}`;
+    $("hud-gear").textContent = `装备 · ${Object.values(state.equipped).filter(Boolean).length} / 6`;
+    $("hud-vitals").textContent = `体力上限 ${heroStats.maxHealth.toLocaleString("zh-CN")}　灵力上限 ${heroStats.maxSpirit}`;
     $("travel-hint").textContent = FirstRain.ferry(state, "village") ? "点灭家村 · 乘索当日回村" : "点地名探路 · 赶路耗一日";
     document.querySelectorAll("[data-place]").forEach(pin => {
       const id = pin.dataset.place;
+      pin.toggleAttribute("data-quest", quest?.step?.place === id);
       pin.dataset.current = String(id === state.place);
       pin.setAttribute("aria-pressed", String(id === selected));
       pin.setAttribute("aria-label", `${World.places[id].name}${id === state.place ? "，灭霸当前所在" : "，查看行程"}`);
@@ -148,6 +184,12 @@
     $("deed-state").textContent = state.deed === "pending" ? `距交割 ${World.boundary - state.day} 日` : label;
     $("deed-copy").textContent = desc;
     renderWaterCase(here);
+    $("dispatch-text").textContent = quest?.title ?? "已结清 · 查看纪事";
+    $("quest-deadline").textContent = quest?.deadline || "";
+    const locate = $("quest-locate");
+    locate.hidden = !quest;
+    locate.disabled = !quest?.step;
+    locate.textContent = quest?.step ? "定位 · " + Quests.describe(quest.step, state) : quest?.note || "";
     $("place-context").textContent = here ? "灭霸所在" : `行程预览 · 第 ${visitDay} 日抵达`;
     $("place-name").textContent = place.name;
     $("place-tag").textContent = place.tag;
@@ -163,11 +205,15 @@
       { id: "travel", name: `动身去${place.name}`, desc: travelNotes.join("") },
       { id: "cancel", name: "留在原地", desc: `回到${World.places[state.place].name}，不耗时。` },
     ];
-    if (here && FirstRain.stage(state) === "meeting") {
+    if (here && selected === "village" && FirstRain.stage(state) === "meeting") {
       actions = [{ id: "readRain", name: "回祠堂檐下商议", desc: "和钢铁侠、灭建国决定先去哪边救急。" },
         ...actions.filter(order => !isRainChoice(order))];
     }
-    const first = actions.find(a => !a.disabled);
+    const target = quest?.step;
+    const guided = target?.place === selected && (here && target.day === state.day
+      ? actions.find(a => a.id === target.action && !a.disabled) : !here && actions.find(a => a.id === "travel"));
+    const first = guided || actions.find(a => !a.disabled);
+    if (guided) actions = [guided, ...actions.filter(a => a !== guided)];
     $("local-actions").replaceChildren(...actions.map(a => actionButton(a, a === first)));
     $("identity").textContent = `灭霸　·　${World.realm(state)}　·　${state.stones} 灵石`;
     $("save-status").textContent = saveMessage;
@@ -224,9 +270,32 @@
     }));
   }
   function render() {
+    cancelCrossing();
     stopPlayback();
     $("battle-view").hidden = !state.battle; $("atlas-view").hidden = !!state.battle;
     if (state.battle) renderBattle(); else renderAtlas();
+  }
+  function cancelCrossing() {
+    if (!crossing) return;
+    crossing.cancel();
+    crossing = null;
+    document.body.removeAttribute("data-crossing");
+  }
+  // The action is saved before its visual transition. Loading another tab's
+  // save cancels the animation and renders the authoritative state immediately.
+  function transition(node, frames, duration, finish) {
+    if (reducedMotion.matches || !node.getClientRects().length) { finish(); return; }
+    const anim = node.animate(frames, { duration, easing: "ease-in-out", fill: "both" });
+    crossing = anim;
+    document.body.setAttribute("data-crossing", "");
+    anim.onfinish = () => {
+      if (crossing !== anim) return;
+      cancelCrossing();
+      if (!checkForNewerSave()) finish();
+    };
+  }
+  function enterScene(node) {
+    if (!reducedMotion.matches) node.animate([{ opacity: .25 }, { opacity: 1 }], { duration: 170 });
   }
   function focusAction(container, id, fallback) {
     const btn = [...$(container).querySelectorAll("button")].find(b => b.dataset.action === id && !b.disabled);
@@ -295,7 +364,10 @@
     announce($("latest").textContent);
   });
   function selectPlace(id) {
+    if (crossing) return;
     selected = id; renderAtlas();
+    $("local-sheet").scrollTop = 0;
+    if (!reducedMotion.matches) $("local-sheet").animate([{ opacity: .72 }, { opacity: 1 }], { duration: 150 });
     if (matchMedia("(max-width: 48rem)").matches) {
       $("place-name").focus({ preventScroll: true });
       $("local-sheet").scrollIntoView({ block: "start" });
@@ -311,19 +383,29 @@
     $("atlas-map").append(pin);
   }
   $("local-actions").addEventListener("click", e => {
-    const button = e.target.closest("button"); if (!button || checkForNewerSave()) return;
+    const button = e.target.closest("button"); if (!button || crossing || checkForNewerSave()) return;
     const id = button.dataset.action;
     if (id === "readRain") { openShelter(); return; }
     if (id === "cancel") { selectPlace(state.place); return; }
     const before = state.deed;
     if (!(id === "travel" ? World.travel(state, selected) : World.act(state, id))) return;
-    selected = state.place; save(); render();
-    if (state.battle) {
-      $("case-title").focus(); announce($("case-premise").textContent); return;
+    selected = state.place; save();
+    function arrive() {
+      render();
+      if (state.battle) {
+        enterScene($("battle-view"));
+        $("case-title").focus(); announce($("case-premise").textContent); return;
+      }
+      if (before === "pending" && state.deed === "taken") $("latest").textContent += " 第五天已交割，买家接管了灭家的田。";
+      if (id === "travel") $("local-sheet").scrollTop = 0;
+      enterScene($("latest"));
+      announce($("latest").textContent); focusAction("local-actions", id, "latest");
     }
-    const deadline = before === "pending" && state.deed === "taken";
-    if (deadline) $("latest").textContent += " 第五天已交割，买家接管了灭家的田。";
-    announce($("latest").textContent); focusAction("local-actions", id, "latest");
+    if (id === "travel") {
+      const marker = $("traveler"), dest = World.places[selected];
+      transition(marker, [{ left: marker.style.left, top: marker.style.top }, { left: dest.x + "%", top: dest.y + "%" }], 320, arrive);
+    } else if (state.battle) transition($("atlas-view"), [{ opacity: 1 }, { opacity: .2 }], 145, arrive);
+    else arrive();
   });
   function clearMotion() {
     const arena = $("arena-art");
@@ -393,17 +475,24 @@
     step();
   }
   function battleAction(id) {
-    if (checkForNewerSave() || (playback && id !== "leave")) return;
+    if (crossing || checkForNewerSave() || (playback && id !== "leave")) return;
     const motions = [];
     if (!World.fight(state, id, motions)) return;
     save();
-    if (motions.length && !reducedMotion.matches) playRound(id, motions);
+    if (id === "leave") {
+      stopPlayback();
+      transition($("battle-view"), [{ opacity: 1 }, { opacity: .2 }], 140, () => {
+        finishBattleAction(id); enterScene($("atlas-view"));
+      });
+    } else if (motions.length && !reducedMotion.matches) playRound(id, motions);
     else finishBattleAction(id);
   }
   $("commands").addEventListener("click", e => { const btn = e.target.closest("button"); if (btn) battleAction(btn.dataset.action); });
   $("leave-battle").addEventListener("click", () => battleAction("leave"));
   $("skip-battle").addEventListener("click", finishPlayback);
-  reducedMotion.addEventListener("change", event => { if (event.matches) finishPlayback(); });
+  reducedMotion.addEventListener("change", event => {
+    if (event.matches) { crossing?.finish(); finishPlayback(); }
+  });
 
   function entry(title, note) {
     const li = el("li"); li.append(el("strong", title), el("small", note)); return li;
@@ -472,27 +561,32 @@
 
     const training = el("section", undefined, "character-techniques");
     const equipment = el("div", undefined, "dossier-equipment");
-    const label = el("p");
-    label.append(el("span", "当前装备", "field-label"), el("strong", artifactName(state.equipped)));
-    equipment.append(label, ledgerButton("dossier-bag", "查看背包"));
+    const rack = el("div", undefined, "slot-rack");
+    for (const [slot, name] of Object.entries(Encounters.slots)) {
+      const btn = ledgerButton("slot-" + slot, undefined, "slot-entry");
+      btn.dataset.slot = slot;
+      btn.append(el("small", name), el("strong", artifactName(state.equipped[slot])));
+      rack.append(btn);
+    }
+    equipment.append(el("h3", "随身装备"), rack);
     const { name, cooldown } = Encounters.snap;
     training.append(equipment, el("h3", "战斗招式"), effectList([
       { name: "普通攻击", desc: `攻击 + 招式威力 − 对手防御，保底为攻击的 5%。普攻威力 +0，抓到破绽再加 ${technique}。` },
       { name, desc: `可打断符咒或蓄雷。免费，出手后冷却 ${cooldown} 回合。` },
-      ...(state.equipped === "lid" ? [] : [{ name: Encounters.stance.name + " · 试锤台", desc: Encounters.stance.desc }]),
-      ...Encounters.artifactEffects(state.equipped, state),
+      ...(state.equipped.weapon === "lid" ? [] : [{ name: Encounters.stance.name + " · 试锤台", desc: Encounters.stance.desc }]),
+      ...Encounters.artifactEffects(state.equipped.weapon, state),
     ]));
     const layout = el("div", undefined, "character-layout");
     layout.append(profile, training);
     body.append(layout);
   }
-  function gearColumn(label, id) {
+  function gearColumn(label, id, loadout) {
     const column = el("div", undefined, "gear-column");
     column.append(el("p", label, "field-label"), el("strong", artifactName(id), "gear-name"));
-    const stats = Encounters.attributes(state, id);
+    const stats = Encounters.attributes(state, loadout);
     const current = Encounters.attributes(state);
     const details = el("dl", undefined, "gear-stats");
-    for (const [key, title] of [["attack", "攻击"], ["defense", "防御"], ["speed", "身法"]]) {
+    for (const [key, title] of [["maxHealth", "体力上限"], ["attack", "攻击"], ["defense", "防御"], ["speed", "身法"]]) {
       const delta = stats[key] - current[key];
       const value = el("dd", stats[key].toLocaleString("zh-CN"));
       if (delta) value.append(el("small", `(${delta > 0 ? "+" : "−"}${Math.abs(delta)})`, delta > 0 ? "gear-increase" : "gear-decrease"));
@@ -515,7 +609,7 @@
   }
   function renderBag(body) {
     const summary = el("div", undefined, "pack-summary");
-    summary.append(el("p", `当前装备 · ${artifactName(state.equipped)}`), el("strong", `${state.stones} 灵石`));
+    summary.append(el("p", `已穿戴 ${Object.values(state.equipped).filter(Boolean).length} / 6 件`), el("strong", `${state.stones} 灵石`));
     const categories = el("div", undefined, "pack-categories");
     categories.setAttribute("role", "group");
     categories.setAttribute("aria-label", "物品类别");
@@ -528,11 +622,22 @@
     }
     body.append(summary, categories);
 
-    const ids = ownedItems(bagCategory);
+    let ids = ownedItems(bagCategory);
+    if (bagCategory === "gear") {
+      const filters = el("div", undefined, "slot-filter");
+      for (const [slot, name] of Object.entries({ "": "全部", ...Encounters.slots })) {
+        const btn = ledgerButton("filter-" + (slot || "all"), name, "slot-choice");
+        btn.dataset.filter = slot;
+        btn.setAttribute("aria-pressed", String(bagSlot === slot));
+        filters.append(btn);
+      }
+      body.append(filters);
+      if (bagSlot) ids = ids.filter(id => Encounters.gear[id].slot === bagSlot);
+    }
     if (!ids.includes(bagItem)) bagItem = ids[0] ?? null;
     if (!bagItem) {
       const empty = { gear: "暂无随身装备。可找灭建国帮忙修田埂。", material: "暂无材料。可去废渠采引气草。", consumable: "暂无丹药。可去青瓦镇药摊买回气丸。", evidence: "暂无凭证。游历取得的凭证会收在这里。" };
-      body.append(el("p", empty[bagCategory], "pack-empty ledger-note"));
+      body.append(el("p", bagCategory === "gear" && bagSlot ? "尚未取得" + Encounters.slots[bagSlot] + "装备。" : empty[bagCategory], "pack-empty ledger-note"));
       return;
     }
     const list = el("ul", undefined, "pack-items");
@@ -543,7 +648,7 @@
       button.setAttribute("aria-pressed", String(id === bagItem));
       button.setAttribute("aria-controls", "pack-detail");
       button.append(el("strong", World.items[id][0]), el("span", `×${state.inventory[id]}`));
-      if (id === state.equipped) button.append(el("small", "已装备"));
+      if (Object.values(state.equipped).includes(id)) button.append(el("small", "已装备"));
       li.append(button);
       list.append(li);
     }
@@ -556,12 +661,14 @@
     const unit = { herb: "株", pill: "枚", returnSlip: "张" }[bagItem] || "件";
     detail.append(title, el("p", `持有 ${state.inventory[bagItem]} ${unit}`, "ledger-note"));
     if (bagCategory === "gear") {
-      const equipped = bagItem === state.equipped;
+      const slot = Encounters.gear[bagItem].slot;
+      const worn = state.equipped[slot];
+      const equipped = bagItem === worn;
       const preview = el("div", undefined, "gear-preview");
-      if (Object.keys(Encounters.gear[bagItem]).length) detail.append(el("p", itemNote(bagItem), "pack-usage"));
-      if (!equipped) preview.append(gearColumn("当前", state.equipped));
-      preview.append(gearColumn(equipped ? "已装备" : "换装后", bagItem));
-      const action = ledgerButton("pack-equip", equipped ? "卸下" : state.equipped ? "换上" : "装备", "pack-equip");
+      detail.append(el("p", Encounters.slots[slot] + " · " + itemNote(bagItem), "pack-usage"));
+      if (!equipped) preview.append(gearColumn("当前" + Encounters.slots[slot], worn, state.equipped));
+      preview.append(gearColumn(equipped ? "已装备" : "换装后", bagItem, { ...state.equipped, [slot]: bagItem }));
+      const action = ledgerButton("pack-equip", equipped ? "卸下" : worn ? "换上" : "装备", "pack-equip");
       action.disabled = !!state.battle;
       detail.append(preview, action);
       if (state.battle) detail.append(el("p", "回到山河图后可换装。", "ledger-note"));
@@ -573,6 +680,36 @@
   function renderJournal(body) {
     body.append(el("p", `第 ${state.day} 日 · ${World.deeds[state.deed][0]} · ${World.places[state.place].name}`, "ledger-stats"),
       el("p", World.deeds[state.deed][1], "ledger-note"));
+    const tasks = Quests.list(state);
+    const tracked = Quests.tracked(tasks, state.trackedQuest);
+    body.append(el("h3", "待办任务"));
+    if (!tracked) body.append(el("p", "本郡事务均已办结。", "ledger-note"));
+    for (const task of tasks.filter(t => !t.result)) {
+      const card = el("section", undefined, "quest-entry");
+      const active = task === tracked;
+      card.append(el("strong", task.title + (active ? " · 追踪中" : "")));
+      if (task.deadline) card.append(el("small", task.deadline));
+      if (task.step) card.append(el("p", Quests.describe(task.step, state)));
+      card.append(el("p", task.note, "ledger-note"));
+      for (const option of task.alternatives || []) card.append(el("p", "也可：" + Quests.describe(option, state), "ledger-note"));
+      if (!active) {
+        const btn = ledgerButton("track-" + task.id, "追踪此事");
+        btn.dataset.track = task.id;
+        card.append(btn);
+      }
+      if (task.step && !state.battle) {
+        const btn = ledgerButton("locate-" + task.id, "在地图定位");
+        btn.dataset.locate = task.id;
+        card.append(btn);
+      }
+      body.append(card);
+    }
+    const resolved = tasks.filter(t => t.result);
+    if (resolved.length) {
+      const list = el("ul", undefined, "ledger-list");
+      for (const task of resolved) list.append(entry(task.title, task.result));
+      body.append(el("h3", "已办结"), list);
+    }
     const note = WaterCase.notice(state);
     if (note) body.append(el("h3", WaterCase.title), el("p", `${note.status} · ${note.date}。${note.text}`, "ledger-note"));
     const rain = FirstRain.notice(state);
@@ -604,11 +741,13 @@
       (replacement && !replacement.disabled ? replacement : $("close-ledger")).focus({ preventScroll: true });
     }
   }
-  function openLedger(kind, category) {
+  function openLedger(kind, category, slot = "") {
+    if (crossing || checkForNewerSave()) return;
     panel = kind;
     if (kind === "bag") {
+      bagSlot = slot;
       bagCategory = category || Object.keys(bagCategories).find(id => ownedItems(id).length) || "gear";
-      bagItem = bagCategory === "gear" ? state.equipped : null;
+      bagItem = state.equipped[bagSlot] || null;
     }
     $("ledger-feedback").textContent = "";
     renderLedger();
@@ -621,10 +760,26 @@
     const btn = e.target.closest("button"); if (!btn) return;
     if (checkForNewerSave()) { renderLedger(); return; }
     if (btn.id === "ask-reset") { openReset("restart"); return; }
-    if (btn.id === "dossier-bag") { openLedger("bag", "gear"); return; }
+    if (btn.dataset.slot) { openLedger("bag", "gear", btn.dataset.slot); return; }
+    if (btn.dataset.track || btn.dataset.locate) {
+      const task = Quests.list(state).find(t => t.id === (btn.dataset.track || btn.dataset.locate) && !t.result);
+      if (!task) return;
+      state.trackedQuest = task.id;
+      save();
+      if (!state.battle) renderAtlas();
+      if (btn.dataset.locate && task.step && !state.battle) {
+        $("ledger").close();
+        locateTask(task);
+      } else renderLedger();
+      return;
+    }
+    if (btn.hasAttribute("data-filter")) {
+      bagSlot = btn.dataset.filter; bagItem = state.equipped[bagSlot] || null; renderLedger(); return;
+    }
     if (btn.dataset.category) {
+      bagSlot = "";
       bagCategory = btn.dataset.category;
-      bagItem = bagCategory === "gear" ? state.equipped : null;
+      bagItem = state.equipped[bagSlot] || null;
       renderLedger();
     } else if (btn.dataset.item) {
       bagItem = btn.dataset.item;
@@ -640,12 +795,25 @@
     }
   });
   $("nav-character").addEventListener("click", () => openLedger("character"));
+  $("explorer-card").addEventListener("click", () => openLedger("character"));
+  function locateTask(task) {
+    selectPlace(task.step.place);
+    const id = selected !== state.place ? "travel" : task.step.day > state.day ? "wait" : task.step.action;
+    focusAction("local-actions", id, "place-name");
+    $("local-actions").querySelector(`[data-action="${id}"]`)?.scrollIntoView({ block: "nearest" });
+  }
+  $("quest-locate").addEventListener("click", () => {
+    if (crossing || checkForNewerSave()) return;
+    const task = Quests.tracked(Quests.list(state), state.trackedQuest);
+    if (task?.step) locateTask(task);
+  });
+  $("atlas-dispatch").addEventListener("click", () => openLedger("journal"));
   $("nav-bag").addEventListener("click", () => openLedger("bag"));
   $("nav-journal").addEventListener("click", () => openLedger("journal"));
   $("close-ledger").addEventListener("click", () => $("ledger").close());
   const resetDialog = $("reset-dialog");
   function openReset(mode) {
-    if (resetDialog.open) return;
+    if (crossing || resetDialog.open) return;
     checkForNewerSave();
     resetDialog.dataset.mode = mode;
     const restart = mode === "restart";
@@ -659,6 +827,16 @@
   }
   $("nav-clear").addEventListener("click", () => openReset("clear"));
   document.addEventListener("keydown", event => {
+    const shortcuts = { b: "bag", j: "journal" };
+    const tab = shortcuts[event.key.toLowerCase()];
+    if (tab && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey && !event.repeat && !event.isComposing
+      && !event.defaultPrevented && !event.target.isContentEditable && !event.target.closest?.("input, textarea, select")
+      && !resetDialog.open && !storyDialog.open && !crossing) {
+      event.preventDefault();
+      if ($("ledger").open && panel === tab) $("ledger").close();
+      else openLedger(tab);
+      return;
+    }
     if (event.key !== "Delete" || !event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing || event.defaultPrevented) return;
     if (document.querySelector("dialog[open]") || event.target.isContentEditable || event.target.closest?.("input, textarea, select")) return;
     event.preventDefault();

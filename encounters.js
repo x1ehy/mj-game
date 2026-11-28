@@ -41,7 +41,21 @@ const Encounters = (() => {
   const counter = { name: "反震" };
   const stance = { name: "沉肩还手", desc: "架住近身锤招，按自身术法威力减伤，并回敬一次普攻。" };
   const pill = { name: "回气丸", recovery: 1 };
-  const gear = { lid: {}, seal: {}, shoes: { speed: 120 }, jacket: { defense: 600 }, buckle: { attack: 700 } };
+  const slots = { head: "头部", body: "身体", legs: "裤子", feet: "鞋子", accessory: "配饰", weapon: "武器" };
+  const gear = {
+    cap: { slot: "head", stats: { defense: 200 } },
+    jacket: { slot: "body", stats: { defense: 600 } },
+    trousers: { slot: "legs", stats: { maxHealth: 1200 } },
+    shoes: { slot: "feet", stats: { speed: 120 } },
+    buckle: { slot: "accessory", stats: { attack: 700 } },
+    lid: { slot: "weapon", stats: {} },
+    seal: { slot: "weapon", stats: {} },
+  };
+  function loadout(legacyItem = null) {
+    const result = Object.fromEntries(Object.keys(slots).map(slot => [slot, null]));
+    if (legacyItem) result[gear[legacyItem].slot] = legacyItem;
+    return result;
+  }
   const duelMoves = {
     jab: { title: "短柄试探", power: 0, physical: true, priority: 0 },
     sweep,
@@ -80,7 +94,12 @@ const Encounters = (() => {
   function attributes(world, equipped = world.equipped) {
     const base = world.trained ? realms.middle : realms.early;
     const stats = { ...base };
-    for (const [stat, bonus] of Object.entries(gear[equipped] || {})) stats[stat] += bonus;
+    // A single item previews replacing its own slot; the other five stay in effect.
+    const current = typeof world.equipped === "object" ? world.equipped : {};
+    const worn = typeof equipped === "string" ? { ...current, [gear[equipped].slot]: equipped } : equipped;
+    for (const item of Object.values(worn || {})) {
+      if (item) for (const [stat, bonus] of Object.entries(gear[item].stats)) stats[stat] += bonus;
+    }
     return stats;
   }
   function damage(attack, power, defense) {
@@ -102,7 +121,7 @@ const Encounters = (() => {
   function start(id, world) {
     const { maxHealth, maxSpirit } = attributes(world);
     const battle = { id, round: 1, health: maxHealth, maxHealth, spirit: maxSpirit, maxSpirit,
-      armor: foes[id].armor, shield: world.equipped === "lid", outcome: null,
+      armor: foes[id].armor, shield: world.equipped.weapon === "lid", outcome: null,
       snapReadyAt: 1, counterReady: false, sweepNext: false,
       effect: "", turns: [{ round: 0, text: foes[id].intro }] };
     if (id === "thor") {
@@ -139,9 +158,9 @@ const Encounters = (() => {
       { id: "hit", name: foe.hit, desc: hitDesc },
       { id: "snap", name: snap.name, desc: cooldown ? `冷却中，还需 ${cooldown} 回合。` : `可打断符咒或落雷。免费，随后冷却 ${snap.cooldown} 回合。`, disabled: cooldown > 0 },
     ];
-    if (battle.duel && world.equipped !== "lid") options.push({ id: "stance", ...stance });
-    if (world.equipped === "seal") options.push({ id: "tide", name: tide.name, desc: `耗 ${tide.cost} 灵力，伤害 ${damage(hero.attack, hero.technique, foe.defense)}。可打断符咒或落雷。`, disabled: battle.spirit < tide.cost });
-    if (world.equipped === "lid") {
+    if (battle.duel && world.equipped.weapon !== "lid") options.push({ id: "stance", ...stance });
+    if (world.equipped.weapon === "seal") options.push({ id: "tide", name: tide.name, desc: `耗 ${tide.cost} 灵力，伤害 ${damage(hero.attack, hero.technique, foe.defense)}。可打断符咒或落雷。`, disabled: battle.spirit < tide.cost });
+    if (world.equipped.weapon === "lid") {
       options.push({ id: "brace", ...brace });
       if (battle.counterReady) options.push({ id: "counter", name: counter.name, desc: `仅本回合可用，伤害 ${damage(hero.attack, 2 * hero.technique, foe.defense)}。` });
     }
@@ -246,7 +265,7 @@ const Encounters = (() => {
     }
     return true;
   }
-  return { foes, snap, stance, gear, pill, attributes, artifactEffects, validPlan, start, intent, forecast, commands, turn };
+  return { foes, snap, stance, slots, gear, loadout, pill, attributes, artifactEffects, validPlan, start, intent, forecast, commands, turn };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = Encounters;

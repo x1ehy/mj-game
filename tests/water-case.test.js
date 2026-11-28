@@ -108,20 +108,20 @@ test("the deed deadline can advance during a hearing and the hearing clock start
 
 test("old saves keep every prior resource and receive the full hearing window, including a saved victory screen", () => {
   const old = fifthDay("debt"); act(old, "wait", "wait");
-  old.version = 1; delete old.waterCase;
+  old.version = 1; old.equipped = null; delete old.waterCase;
   const before = structuredClone(old);
   W.upgradeSave(old);
-  assert.equal(old.version, 3); assert.equal(Water.valid(old), true);
+  assert.equal(old.version, 4); assert.equal(Water.valid(old), true);
   assert.deepEqual(old.waterCase, { openedDay: before.day, outcome: null });
-  for (const key of ["day","deed","place","stones","inventory","equipped","debt","cleared","battle"]) assert.deepEqual(old[key], before[key]);
+  for (const key of ["day","deed","place","stones","inventory","debt","cleared","battle"]) assert.deepEqual(old[key], before[key]);
   assert.deepEqual(old.journal.slice(1), before.journal);
   const after = structuredClone(old); W.upgradeSave(old); assert.deepEqual(old,after);
-  const early = W.fresh(); early.version = 1; delete early.waterCase; W.upgradeSave(early);
+  const early = W.fresh(); early.version = 1; early.equipped = null; delete early.waterCase; W.upgradeSave(early);
   assert.equal(early.waterCase, null); assert.equal(Water.valid(early), true);
   const victory = W.fresh(); go(victory, "canal"); act(victory, "fight");
   for (const id of ["hit","snap","hit","hit","snap","hit","hit"]) W.fight(victory, id);
   Object.assign(victory.battle, { maxHealth: 5, health: 5 });
-  victory.version = 1; delete victory.waterCase; W.upgradeSave(victory);
+  victory.version = 1; victory.equipped = null; delete victory.waterCase; W.upgradeSave(victory);
   assert.equal(victory.battle.outcome, "victory"); assert.equal(victory.inventory.seal, 1);
   assert.equal(W.fight(victory, "hit"), false); assert.equal(Water.valid(victory), true);
 });

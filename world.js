@@ -26,6 +26,8 @@ const World = ((combat, water, rain) => {
     lid: ["裂纹炉盖", "每场首次受击最多抵消体力上限的四成。可主动架盖挡重击，下一回合反震。"],
     shoes: ["踩泥草鞋", "灭建国用旧稻秆编的。帮他修完灭家村的田埂就能拿到。"],
     jacket: ["补过三回的校服", `里衬缝了三层，肘上还印着上一任主人的班号。火箭在青瓦镇摆摊时卖 ${jacketPrice} 灵石。`],
+    cap: ["丹房护头帽", "学宫库房备着厚毡帽。击败点名的丹炉后可领一顶，防御 +200。"],
+    trousers: ["渡口下田裤", "村口管事缝的厚布裤。修好田埂后可去领，体力上限 +1,200。"],
     buckle: ["雷纹铁扣", "托尔拿锤子把验收章压在废铁上。首次赢下废渠的切磋可得。"],
     returnSlip: ["丹房退货单", `可在青瓦镇找火箭换 ${slipValue} 灵石，或在学宫丹房库房换 ${slipPills} 枚${combat.pill.name}。兑过即收回。`],
     pill: [combat.pill.name, `战斗中占用一回合，恢复 ${combat.pill.recovery} 点灵力。青瓦镇药摊售价 ${pillPrice} 灵石。`],
@@ -39,8 +41,8 @@ const World = ((combat, water, rain) => {
   const boundary = 5;
   const breakthrough = { xp: 4, herbs: 1 };
   function fresh() {
-    return { version: 3, day: 1, place: "village", deed: "pending", stones: 3, xp: 0, waterCase: null,
-      trained: false, equipped: null, debt: false, introduced: false, lesson: false,
+    return { version: 4, day: 1, place: "village", deed: "pending", stones: 3, xp: 0, waterCase: null,
+      trained: false, equipped: combat.loadout(), trackedQuest: null, debt: false, introduced: false, lesson: false,
       broker: false, inventory: {}, cleared: { furnace: false, sluice: false }, battle: null,
       journal: [{ day: 1, text: "灭霸回村那天，告示上写着「无主灵田一亩」。灭建国正蹲在那亩田里拔草。" }] };
   }
@@ -51,13 +53,16 @@ const World = ((combat, water, rain) => {
     if (s.journal.length > 60) s.journal.pop();
   }
   function armorScale(s) {
-    if (s.version === 3) return 1;
+    if (s.version >= 3) return 1;
     return [5, 7].includes(s.battle.maxHealth) ? 2000 : 100;
   }
   function upgradeSave(s) {
-    if (s.version === 3) return s;
+    if (s.version === 4) return s;
+    s.deedLate = s.deed === "taken" || s.journal.some(entry => entry.text.startsWith("第五天交割。"));
+    s.equipped = combat.loadout(s.equipped);
+    s.trackedQuest = null;
     const b = s.battle;
-    if (b) {
+    if (b && s.version < 3) {
       const fullHealth = combat.attributes(s).maxHealth;
       b.armor *= armorScale(s);
       b.health = Math.round(b.health * fullHealth / b.maxHealth);
@@ -70,12 +75,13 @@ const World = ((combat, water, rain) => {
         log(s, "学宫今日才收到水表停摆的报修单。明日到灭家村田头开听，旧账从今天起公示。");
       }
     }
-    s.version = 3;
+    s.version = 4;
     return s;
   }
   function passDay(s) {
     s.day++;
     if (s.day >= boundary && s.deed === "pending") {
+      s.deedLate = true;
       s.deed = "taken";
       log(s, "第五天交割。买家接管灵田，新管事把灭家的锄头也登记成了租具。");
     }
@@ -188,6 +194,9 @@ const World = ((combat, water, rain) => {
     }
   }
   function academyOrders(s, add) {
+    if (s.cleared.furnace && !s.inventory.cap) add("claimCap", "去库房领护头帽", "丹炉已停，库房按检修规矩发帽。防御 +200。", () => {
+      gain(s, "cap"); log(s, "库房给灭霸发了顶护头帽。帽檐内侧绣着「检修前领取」，签收单上却要先填完工日期。");
+    });
     if (!s.inventory.record) add("archive", "翻查学宫旧档", "在西厢取一张底册拓片。", () => {
       gain(s, "record"); log(s, "你拓下底册。新册抄漏了一个「灭」字，难怪灭家田成了无主田。带齐收条就能递状。");
     });
@@ -203,6 +212,9 @@ const World = ((combat, water, rain) => {
     });
   }
   function villageOrders(s, add) {
+    if (s.inventory.shoes && !s.inventory.trousers) add("claimTrousers", "在渡口领下田裤", "修田埂的工衣。体力上限 +1,200，领取不耗日。", () => {
+      gain(s, "trousers"); log(s, "管事抖开一条厚布裤。两边裤脚各有一指泥印，正好记着昨天的水深。");
+    });
     if (s.deed === "taken") add("rent", "与管事签佃约", "付 4 灵石重新租田，每次收成分买家一枚。", () => {
       s.stones -= 4; s.deed = "leased"; log(s, "管事收下租金，把地头的木牌翻到背面。灭家重新下田，收成按佃约分账。");
     }, s.stones < 4);
@@ -284,8 +296,9 @@ const World = ((combat, water, rain) => {
   }
   function equip(s, id) {
     if (s.battle || !Object.hasOwn(combat.gear, id) || !s.inventory[id]) return false;
-    s.equipped = s.equipped === id ? null : id;
-    log(s, s.equipped ? `装上${items[id][0]}。` : `收起${items[id][0]}。`);
+    const slot = combat.gear[id].slot;
+    s.equipped[slot] = s.equipped[slot] === id ? null : id;
+    log(s, s.equipped[slot] ? `装上${items[id][0]}。` : `收起${items[id][0]}。`);
     return true;
   }
   function victoryReport(id, firstWin = false) {

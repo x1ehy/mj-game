@@ -1,0 +1,194 @@
+.explorer-card, .atlas-dispatch, .binding kbd { display: none; }
+#traveler {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -100%) translateY(-1.35rem);
+  pointer-events: none;
+}
+#traveler .hero-avatar {
+  width: 2.45rem;
+  border: 2px solid #f6e7c3;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #853e2e, 0 3px 8px #32271e80;
+}
+#route-note {
+  position: absolute;
+  transform: translate(-50%, 1.25rem);
+  z-index: 2;
+  pointer-events: none;
+  white-space: nowrap;
+  background: #293e34;
+  color: #fff7dc;
+  padding: .2rem .55rem;
+  font: .78rem/1.5 var(--font-ui);
+}
+#route-trail {
+  position: absolute; pointer-events: none; transform-origin: left center;
+  height: 3px; border-top: 3px dashed #844536; filter: drop-shadow(0 1px 1px #fff0bf);
+}
+body[data-crossing] :is(.binding, #atlas-view, #battle-view) { pointer-events: none; }
+.command:active:not(:disabled), .pin:active span { translate: 0 1px; }
+
+@media (min-width: 64rem) and (min-height: 34rem) {
+  body { --rail: clamp(20rem, 24vw, 28rem); --edge: clamp(1rem, 1.6vw, 2rem); }
+  body:has(#atlas-view:not([hidden])) { background: #25372e; }
+  .binding { position: relative; z-index: 3; border-bottom: 1px solid #ad9973; background: #20362d; }
+  .binding-inner { width: 100%; padding: 0 var(--edge); min-height: 3.2rem; }
+  .binding nav { align-items: center; gap: 1rem; }
+  .binding kbd { display: inline-block; padding: .03rem .23rem; margin-left: .1rem; border: 1px solid #819083; font: .72rem/1.1 var(--font-ui); }
+  #nav-clear { font-size: .78rem; color: #cec8b7; }
+
+  .atlas-shell {
+    width: 100%; height: 100dvh; position: relative; overflow: hidden;
+    isolation: isolate; background: #293f34;
+  }
+  .field-layout, .map-column { display: contents; }
+  .atlas-figure {
+    position: absolute; inset: 0 var(--rail) 0 0; overflow: hidden; container-type: size;
+    background: #d3c7a8; border: 0;
+  }
+  .atlas-map {
+    position: absolute; width: max(100cqw, 150cqh); height: max(100cqh, 66.6667cqw);
+    left: 50%; top: 50%; transform: translate(-50%, -50%);
+  }
+  .map-art { width: 100%; height: 100%; }
+  .atlas-figure figcaption {
+    position: absolute; bottom: var(--edge); right: var(--edge); display: block;
+    background: #233b32ed; color: #fff2d8; font-size: .76rem; padding: .3rem .65rem;
+  }
+  .map-traveler { display: none; }
+  .atlas-header {
+    position: absolute; z-index: 1; top: calc(var(--edge) + 2rem); left: var(--edge); padding: 0;
+    color: #f8efd9; background: #223c31f5; border-left: 4px solid #ad7657;
+    pointer-events: none;
+  }
+  .atlas-header h1 { font: bold clamp(1.45rem, 2.2vw, 2.65rem)/1.2 var(--font-title); color: inherit; letter-spacing: .09em; margin: .65rem .95rem; }
+  .atlas-header p { display: none; }
+  .almanac { padding: .2rem .95rem; border-color: #748271; }
+  .almanac span { color: #ddcca8; font-size: .72rem; }
+  .almanac strong { font: bold 1.05rem var(--font-title); margin: 0; }
+  .pin { min-height: 44px; }
+  .pin span { padding: .35rem .9rem; box-shadow: 0 2px 5px #332b1a55; }
+  .pin:hover span { translate: 0 -2px; }
+  #traveler .hero-avatar { width: 2.9rem; }
+  .map-column > :is(.deed-sheet,.water-notice) { display: none; }
+  .atlas-dispatch {
+    display: grid; position: absolute; top: var(--edge); right: var(--edge);
+    width: calc(var(--rail) - var(--edge) * 2); min-height: 4.15rem; align-content: center;
+    padding: .5rem .9rem; border: 1px solid #b7a684; border-left: 4px solid #934a36;
+    text-align: left; color: var(--ink); background: #f7f0df; cursor: pointer;
+  }
+  .atlas-dispatch .field-label { color: var(--seal); }
+  .atlas-dispatch strong { font: 700 1rem/1.4 var(--font-title); }
+  .local-sheet {
+    position: absolute; top: calc(var(--edge) + 7.65rem); bottom: 3.45rem;
+    right: var(--edge); width: calc(var(--rail) - var(--edge) * 2); overflow: auto; overscroll-behavior: contain;
+    scrollbar-width: thin; scrollbar-color: #ad9b77 transparent;
+    padding: 1rem; border: 1px solid #bcac8c; border-top: 3px solid #416552; background: #f8f4e9f7;
+  }
+  .local-sheet h2 { margin: .35rem 0; font-size: 2rem; }
+  .local-actions { gap: .4rem; margin-top: .7rem; }
+  .local-actions .command { padding: .55rem .7rem; }
+  .atlas-footer {
+    position: absolute; bottom: 1.25rem; left: calc(100% - var(--rail) + var(--edge)); background: none;
+    color: #f6ecd7; padding: 0; font-size: .74rem;
+  }
+  #identity { display: none; }
+  .explorer-card {
+    position: absolute; left: var(--edge); bottom: var(--edge); display: flex; align-items: center; gap: .8rem;
+    padding: .65rem .95rem .65rem .7rem; color: #fcf2da; background: #243e33f5; border: 1px solid #b2a27e;
+    text-align: left; cursor: pointer; box-shadow: 0 2px 8px #27251f40;
+  }
+  .explorer-card:hover, .atlas-dispatch:hover { outline: 1px solid #b99766; }
+  .explorer-card .hero-avatar { width: 4rem; border-color: #c3af88; }
+  .explorer-info { display: grid; gap: .13rem; font: .8rem/1.35 var(--font-ui); }
+  .explorer-info strong { font: bold 1.32rem var(--font-title); }
+  #hud-realm { color: #e9d1a5; }
+  #ledger, #ledger:is([data-panel="character"],[data-panel="bag"]) {
+    position: fixed; inset: 3.2rem 0 0 auto; margin: 0; width: clamp(32rem, 40vw, 46rem);
+    height: calc(100dvh - 3.2rem); max-height: none; border-block: 0; border-left: 3px solid #9d8765;
+  }
+  #ledger::backdrop { background: rgb(26 35 28 / .24); }
+  #story-dialog { width: min(48rem, 77vw); margin: auto auto var(--edge); }
+  #story-dialog::backdrop { background: rgb(26 35 28 / .42); }
+
+  /* The sheet rests against the map's edge, keeping all four sites in view. */
+  body:has(#atlas-view:not([hidden])) .binding {
+    position: absolute; inset: 0 0 auto; height: 0; border: 0; background: none;
+  }
+  body:has(#atlas-view:not([hidden])) .binding-inner { min-height: 0; }
+  body:has(#atlas-view:not([hidden])) .wordmark {
+    position: absolute; left: var(--edge); top: var(--edge); gap: .4rem;
+    background: #233c31; padding: .22rem .6rem; font-size: .88rem;
+  }
+  body:has(#atlas-view:not([hidden])) .book-seal { width: 1.25rem; height: 1.25rem; font-size: .82rem; }
+  body:has(#atlas-view:not([hidden])) .binding nav {
+    position: absolute; top: calc(var(--edge) + 4.45rem); right: var(--edge);
+    width: calc(var(--rail) - 2 * var(--edge)); display: flex; gap: .3rem;
+  }
+  body:has(#atlas-view:not([hidden])) .binding nav button:not(#nav-clear) {
+    flex: auto; color: #fff1d5; background: #344c3e; border: 1px solid #71816a; font-size: .87rem;
+  }
+  body:has(#atlas-view:not([hidden])) #nav-clear {
+    position: fixed; bottom: .55rem; right: var(--edge);
+  }
+  body:has(#atlas-view:not([hidden])) #ledger { inset-block-start: 0; height: 100dvh; }
+}
+@media (min-width: 64rem) and (max-aspect-ratio: 1/1) {
+  .atlas-map { width: 100%; height: auto; }
+  .atlas-figure { background: #d4c8ac; }
+}
+@media (min-width: 64rem) and (min-height: 34rem) and (prefers-reduced-motion: no-preference) {
+  #ledger { opacity: 0; transform: translateX(1.7rem); transition: opacity 160ms, transform 180ms ease-out, overlay 180ms allow-discrete, display 180ms allow-discrete; }
+  #ledger[open] { opacity: 1; transform: none; }
+  @starting-style { #ledger[open] { opacity: 0; transform: translateX(1.7rem); } }
+  #ledger::backdrop { opacity: 0; transition: opacity 160ms, overlay 180ms allow-discrete, display 180ms allow-discrete; }
+  #ledger[open]::backdrop { opacity: 1; }
+  @starting-style { #ledger[open]::backdrop { opacity: 0; } }
+  #story-dialog[open] .story-portrait { animation: portrait-arrive 210ms ease-out; --entrance: -.85rem; }
+  #story-dialog[open] #story-partner { --entrance: .85rem; }
+  @keyframes portrait-arrive { from { opacity: .4; transform: translateX(var(--entrance)); } }
+  #story-dialog {
+    opacity: 0; transform: translateY(.6rem);
+    transition: opacity 160ms, transform 160ms ease-out, overlay 160ms allow-discrete, display 160ms allow-discrete;
+  }
+  #story-dialog[open] { opacity: 1; transform: none; animation: none; }
+  @starting-style { #story-dialog[open] { opacity: 0; transform: translateY(.6rem); } }
+}
+
+/* Track a single lead on the map. The journal holds the full docket. */
+.atlas-dispatch {
+  display: grid; gap: .2rem; padding: .65rem .85rem; margin-bottom: .7rem;
+  background: #f6f0df; border: 1px solid #bead8b; border-left: 4px solid #934a36;
+  color: var(--ink); text-align: left; cursor: default;
+}
+.quest-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .25rem; font-size: .75rem; color: #784331; }
+.atlas-dispatch button {
+  font: inherit; text-align: left; border: 0; color: #284a39; background: transparent; padding: .12rem 0; cursor: pointer;
+}
+.atlas-dispatch button:hover { text-decoration: underline; }
+#quest-locate { font-size: .84rem; line-height: 1.45; }
+.pin[data-quest] span { border-bottom: 3px solid #98542f; }
+.quest-entry { padding: .7rem 0; border-bottom: 1px solid #ccc1a8; }
+.quest-entry > small { display: block; color: #824b36; }
+.quest-entry p { margin: .3rem 0; }
+.quest-entry button { margin: .2rem .85rem .1rem 0; }
+.dossier-equipment { display: block; }
+.slot-rack { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; }
+.slot-entry, .slot-choice {
+  font: inherit; color: #34483a; padding: .35rem .5rem; border: 1px solid #b8ad90; background: #f8f3e6; cursor: pointer;
+}
+.slot-entry { text-align: left; }
+.slot-entry small { display: block; color: #665c48; }
+.slot-entry strong { font-size: .88rem; }
+.slot-filter { display: flex; flex-wrap: wrap; gap: .25rem; margin: .65rem 0; }
+.slot-choice { font-size: .82rem; }
+.slot-choice[aria-pressed="true"] { background: #334f40; color: #fff5db; }
+@media (min-width: 64rem) and (min-height: 34rem) {
+  .atlas-dispatch { height: 7.6rem; align-content: start; overflow: auto; margin: 0; }
+  body:has(#atlas-view:not([hidden])) .binding nav { top: calc(var(--edge) + 7.95rem); }
+  .local-sheet { top: calc(var(--edge) + 11.15rem); }
+  #ledger .character-layout, #ledger .pack-layout { grid-template-columns: minmax(0,1fr); }
+  #ledger .pack-items { display: flex; flex-wrap: wrap; gap: .35rem; }
+  #ledger .pack-items > li { flex: 1 1 8rem; }
+}

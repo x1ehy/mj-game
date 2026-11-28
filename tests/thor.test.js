@@ -8,7 +8,7 @@ const C = require("../encounters.js");
 function inspection(equipped) {
   const s = W.fresh();
   s.place = "canal"; s.day = 9; s.cleared = { furnace: true, sluice: true };
-  s.inventory = { lid: 1, seal: 1 }; s.equipped = equipped;
+  s.inventory = { lid: 1, seal: 1 }; s.equipped.weapon = equipped;
   s.waterCase = { openedDay: 3, outcome: "commons" };
   assert.equal(W.act(s, "fight"), true);
   return s;
@@ -62,6 +62,7 @@ test("new equipment applies the same bonuses in previews, initiative and resolve
     ["buckle", 2700, 2000, "雷神托尔"],
   ]) {
     play(s, "leave");
+    for (const worn of Object.values(s.equipped).filter(Boolean)) assert.ok(W.equip(s, worn));
     assert.equal(W.equip(s, id), true);
     assert.ok(W.act(s, "fight"));
     s.battle.duel.move = "jab";
@@ -173,6 +174,7 @@ test("old saves scale once and finish the already telegraphed inspection", () =>
   const s = inspection("seal");
   delete s.battle.duel;
   s.version = 2;
+  s.equipped = "seal";
   Object.assign(s.battle, { round: 2, maxHealth: 5, health: 3, armor: 4, sweepNext: true });
   W.upgradeSave(s); W.upgradeSave(s);
   assert.equal(s.battle.maxHealth, 10000);
@@ -190,6 +192,7 @@ test("a pre-update furnace battle resumes without cooldown fields", () => {
 test("a wounded middle-realm duel keeps its health ratio, enemy plan and cooldown after upgrade", () => {
   const s = inspection("seal");
   s.version = 2;
+  s.equipped = "seal";
   s.trained = true;
   Object.assign(s.battle, { health: 98, maxHealth: 140, armor: 123, maxSpirit: 3, spirit: 1, round: 3, snapReadyAt: 4 });
   const plan = structuredClone(s.battle.duel);
@@ -210,7 +213,7 @@ test("artifacts scale with the wearer's realm in preview and in combat", () => {
   assert.match(C.artifactEffects("seal", s)[0].desc, /4000/);
   play(s, "tide");
   assert.equal(s.battle.armor, 7000);
-  s.equipped = "lid";
+  s.equipped.weapon = "lid";
   s.battle = C.start("thor", s);
   s.battle.duel.move = "slam";
   assert.match(C.artifactEffects("lid", s)[2].desc, /9600/);

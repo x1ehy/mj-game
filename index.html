@@ -10,10 +10,12 @@
   <link rel="stylesheet" href="atlas.css">
   <link rel="stylesheet" href="character.css?v=battle-motion">
   <link rel="stylesheet" href="dialogue.css">
+  <link rel="stylesheet" href="exploration.css">
   <script src="encounters.js" defer></script>
   <script src="water-case.js" defer></script>
   <script src="first-rain.js" defer></script>
   <script src="world.js" defer></script>
+  <script src="quests.js" defer></script>
   <script src="game.js" defer></script>
 </head>
 <body>
@@ -22,8 +24,8 @@
       <div class="wordmark"><span class="book-seal" aria-hidden="true">郡</span>爱慕杰修仙志</div>
       <nav aria-label="行旅手册">
         <button type="button" id="nav-character" aria-haspopup="dialog">人物</button>
-        <button type="button" id="nav-bag" aria-haspopup="dialog">背包</button>
-        <button type="button" id="nav-journal" aria-haspopup="dialog">郡中纪事</button>
+        <button type="button" id="nav-bag" aria-haspopup="dialog" aria-keyshortcuts="B">背包 <kbd>B</kbd></button>
+        <button type="button" id="nav-journal" aria-haspopup="dialog" aria-keyshortcuts="J">郡中纪事 <kbd>J</kbd></button>
         <button type="button" id="nav-clear" aria-haspopup="dialog" aria-keyshortcuts="Shift+Delete" title="清除当前存档（Shift + Delete）">清除存档</button>
       </nav>
     </div>
@@ -37,11 +39,19 @@
       </div>
       <div class="almanac"><span>郡历</span><strong id="day">第 1 日</strong></div>
     </header>
+    <section class="atlas-dispatch" aria-label="追踪任务">
+      <div class="quest-heading"><span class="field-label">追踪任务</span><span id="quest-deadline"></span></div>
+      <button id="atlas-dispatch" type="button" aria-haspopup="dialog"><strong id="dispatch-text"></strong><span aria-hidden="true"> ›</span></button>
+      <button id="quest-locate" type="button"></button>
+    </section>
     <div class="field-layout">
       <div class="map-column">
         <figure class="atlas-figure">
           <div class="atlas-map" id="atlas-map" role="group" aria-label="点选地名可查看行程或前往">
             <img class="map-art" src="art/locations/qingwa-atlas.webp" alt="青瓦河从群山间流过，西岸有村田和市镇，东岸有学宫和废弃的水闸。" width="1536" height="1024">
+            <span id="route-trail" aria-hidden="true" hidden></span>
+            <span id="traveler" aria-hidden="true"><span class="hero-avatar" data-hero-art></span></span>
+            <span id="route-note" hidden></span>
           </div>
           <figcaption>
             <span class="map-traveler"><span class="hero-avatar" data-hero-art aria-hidden="true"></span><span id="map-position">灭霸在灭家村</span></span>
@@ -85,6 +95,13 @@
       </section>
     </div>
     <footer class="atlas-footer"><span id="identity"></span><span id="save-status"></span></footer>
+    <button class="explorer-card" type="button" id="explorer-card" aria-haspopup="dialog" title="查看人物属性">
+      <span class="hero-avatar" data-hero-art aria-hidden="true"></span>
+      <span class="explorer-info"><span><strong>灭霸</strong> <span id="hud-realm"></span></span>
+        <span id="hud-cultivation"></span><span id="hud-vitals"></span><span id="hud-gear"></span>
+      </span>
+    </button>
+
   </main>
   <main class="game" id="battle-view" hidden>
     <header class="case-header">
