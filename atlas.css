@@ -22,6 +22,7 @@ button:hover:not(:disabled) { text-decoration-color: currentColor; }
 .almanac { flex: none; min-width: max-content; padding: .25rem 0 .3rem 1.3rem; border-left: 1px solid var(--control-line); }
 .almanac span,.field-label { color: var(--bronze); font-weight: 700; font-size: .82rem; letter-spacing: .06em; }
 .almanac strong { display: block; font: bold 1.6rem var(--font-title); margin-top: .3rem; white-space: nowrap; }
+.game-version { display: block; margin-top: .2rem; color: inherit; font-size: .75rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
 .field-layout { display: grid; grid-template-columns: minmax(0,1.92fr) minmax(19rem,1fr); gap: clamp(1rem,2vw,1.7rem); align-items: start; }
 .map-column { min-width: 0; }
 .atlas-figure { margin: 0; background: #314337; border: 1px solid #53604e; }
